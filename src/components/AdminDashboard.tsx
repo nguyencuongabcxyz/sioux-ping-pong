@@ -57,6 +57,8 @@ const AdminDashboard = () => {
   const [showTieBreakModal, setShowTieBreakModal] = useState(false)
   const [tieBreakData, setTieBreakData] = useState<any>(null)
   const [selectedTieBreakTeams, setSelectedTieBreakTeams] = useState<string[]>([])
+  const [tableFilter, setTableFilter] = useState<string>('all')
+  const [statusFilter, setStatusFilter] = useState<string>('all')
 
   useEffect(() => {
     fetchMatches()
@@ -350,9 +352,24 @@ const AdminDashboard = () => {
     }
   }
 
+  // Filter matches based on selected filters
+  const filteredMatches = matches.filter(match => {
+    // Table filter
+    if (tableFilter !== 'all' && match.tournamentTable?.id !== tableFilter) {
+      return false
+    }
+    
+    // Status filter
+    if (statusFilter !== 'all' && match.status !== statusFilter) {
+      return false
+    }
+    
+    return true
+  })
+
   // Separate matches by type
-  const groupStageMatches = matches.filter(match => match.matchType === 'GROUP_STAGE')
-  const knockoutMatches = matches.filter(match => match.matchType === 'KNOCKOUT')
+  const groupStageMatches = filteredMatches.filter(match => match.matchType === 'GROUP_STAGE')
+  const knockoutMatches = filteredMatches.filter(match => match.matchType === 'KNOCKOUT')
 
   if (loading) {
     return (
@@ -500,6 +517,60 @@ const AdminDashboard = () => {
               </p>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Filter by Table
+            </label>
+            <select
+              value={tableFilter}
+              onChange={(e) => setTableFilter(e.target.value)}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="all">All Tables</option>
+              <option value="cmdya4xs80001f00kgvawefc7">Table A</option>
+              <option value="cmdya4xsp0002f00krsin4w9e">Table B</option>
+              <option value="cmdya4xt10003f00kcl4vgvdc">Table C</option>
+            </select>
+          </div>
+          
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Filter by Status
+            </label>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="all">All Status</option>
+              <option value="SCHEDULED">Scheduled</option>
+              <option value="IN_PROGRESS">In Progress</option>
+              <option value="COMPLETED">Completed</option>
+              <option value="CANCELLED">Cancelled</option>
+            </select>
+          </div>
+          
+          <div className="flex items-end">
+            <button
+              onClick={() => {
+                setTableFilter('all')
+                setStatusFilter('all')
+              }}
+              className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
+            >
+              Clear Filters
+            </button>
+          </div>
+        </div>
+        
+        <div className="mt-4 text-sm text-gray-600">
+          Showing {filteredMatches.length} of {matches.length} matches
         </div>
       </div>
 

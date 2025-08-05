@@ -428,17 +428,15 @@ const MatchSchedules = () => {
     <div className="space-y-6">
       {/* Filters */}
       <div className="bg-white rounded-lg shadow-sm border p-4">
-        <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-gray-500" />
-            <span className="text-sm font-medium text-gray-700">Filters:</span>
-          </div>
-          
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Filter by Status
+            </label>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1 sm:flex-none"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">All Statuses</option>
               <option value="SCHEDULED">Scheduled</option>
@@ -446,18 +444,39 @@ const MatchSchedules = () => {
               <option value="COMPLETED">Completed</option>
               <option value="CANCELLED">Cancelled</option>
             </select>
-            
+          </div>
+          
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Filter by Table
+            </label>
             <select
               value={tableFilter}
               onChange={(e) => setTableFilter(e.target.value)}
-              className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1 sm:flex-none"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">All Tables</option>
-              <option value="table1">Table 1</option>
-              <option value="table2">Table 2</option>
-              <option value="table3">Table 3</option>
+              <option value="cmdya4xs80001f00kgvawefc7">Table A</option>
+              <option value="cmdya4xsp0002f00krsin4w9e">Table B</option>
+              <option value="cmdya4xt10003f00kcl4vgvdc">Table C</option>
             </select>
           </div>
+          
+          <div className="flex items-end">
+            <button
+              onClick={() => {
+                setStatusFilter('all')
+                setTableFilter('all')
+              }}
+              className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors text-sm"
+            >
+              Clear Filters
+            </button>
+          </div>
+        </div>
+        
+        <div className="mt-4 text-sm text-gray-600">
+          Showing {matchesData.matches.length} of {matchesData.total} matches
         </div>
       </div>
 
