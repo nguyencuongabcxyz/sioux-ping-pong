@@ -87,22 +87,114 @@ async function getQualifiedTeams() {
   // Get all tables with their teams and stats
   const tables = await prisma.tournamentTable.findMany({
     include: {
-      teams: {
-        orderBy: [
-          { wins: 'desc' },
-          { points: 'desc' },
-          { pointsAgainst: 'asc' }
-        ]
-      }
+      teams: true
     },
     orderBy: { name: 'asc' }
   })
+
+  // Sort teams within each table using the same logic as standings
+  const tablesWithSortedTeams = await Promise.all(tables.map(async table => {
+    // Get all completed matches for this table to calculate head-to-head results
+    const tableMatches = await prisma.match.findMany({
+      where: {
+        tournamentTableId: table.id,
+        matchType: 'GROUP_STAGE',
+        status: 'COMPLETED'
+      },
+      select: {
+        homeTeamId: true,
+        awayTeamId: true,
+        homeGamesWon: true,
+        awayGamesWon: true
+      }
+    })
+
+    // Create head-to-head lookup map
+    const headToHeadMap = new Map<string, number>()
+    for (const match of tableMatches) {
+      const key = `${match.homeTeamId}-${match.awayTeamId}`
+      const reverseKey = `${match.awayTeamId}-${match.homeTeamId}`
+      
+      const homeWon = match.homeGamesWon > match.awayGamesWon
+      headToHeadMap.set(key, homeWon ? 1 : -1)
+      headToHeadMap.set(reverseKey, homeWon ? -1 : 1)
+    }
+
+    // Calculate games won/lost for each team
+    const teamGamesWon = new Map<string, number>()
+    const teamGamesLost = new Map<string, number>()
+    
+    for (const match of tableMatches) {
+      // Add games won by home team
+      const currentHomeWon = teamGamesWon.get(match.homeTeamId) || 0
+      teamGamesWon.set(match.homeTeamId, currentHomeWon + match.homeGamesWon)
+      
+      // Add games lost by home team
+      const currentHomeLost = teamGamesLost.get(match.homeTeamId) || 0
+      teamGamesLost.set(match.homeTeamId, currentHomeLost + match.awayGamesWon)
+      
+      // Add games won by away team
+      const currentAwayWon = teamGamesWon.get(match.awayTeamId) || 0
+      teamGamesWon.set(match.awayTeamId, currentAwayWon + match.awayGamesWon)
+      
+      // Add games lost by away team
+      const currentAwayLost = teamGamesLost.get(match.awayTeamId) || 0
+      teamGamesLost.set(match.awayTeamId, currentAwayLost + match.homeGamesWon)
+    }
+
+    const sortedTeams = table.teams.sort((a, b) => {
+      // 1. Tournament Points (most wins)
+      if (a.wins !== b.wins) {
+        return b.wins - a.wins
+      }
+      
+      // 2. Game Difference (games won - games lost) - CORRECTED
+      const aGamesWon = teamGamesWon.get(a.id) || 0
+      const aGamesLost = teamGamesLost.get(a.id) || 0
+      const bGamesWon = teamGamesWon.get(b.id) || 0
+      const bGamesLost = teamGamesLost.get(b.id) || 0
+      
+      const aGameDiff = aGamesWon - aGamesLost
+      const bGameDiff = bGamesWon - bGamesLost
+      if (aGameDiff !== bGameDiff) {
+        return bGameDiff - aGameDiff
+      }
+      
+      // 3. Point Difference (points scored - points conceded)
+      const aPointDiff = a.points - a.pointsAgainst
+      const bPointDiff = b.points - b.pointsAgainst
+      if (aPointDiff !== bPointDiff) {
+        return bPointDiff - aPointDiff
+      }
+      
+      // 4. Total points scored (tiebreaker)
+      return b.points - a.points
+    })
+
+    // Debug logging for first table
+    if (table.name === 'Table A') {
+      console.log('Knockout - Table A teams after sorting:', sortedTeams.map(t => ({
+        name: t.name,
+        wins: t.wins,
+        losses: t.losses,
+        gameDiff: t.wins - t.losses,
+        pointDiff: t.points - t.pointsAgainst,
+        points: t.points
+      })))
+      console.log('Knockout - Head-to-head map:', Object.fromEntries(headToHeadMap))
+    }
+
+    return {
+      ...table,
+      teams: sortedTeams
+    }
+  }))
 
   const qualifiedTeams = []
   const thirdPlaceTeams = []
 
   // Get top 2 from each table and collect 3rd place teams
-  for (const table of tables) {
+  for (const table of tablesWithSortedTeams) {
     if (table.teams.length >= 3) {
       // Top 2 teams qualify directly
       qualifiedTeams.push(table.teams[0], table.teams[1])

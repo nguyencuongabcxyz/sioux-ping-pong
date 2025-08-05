@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+
+
 export async function GET() {
   try {
     // Get tournament stage to check if knockout is generated
@@ -30,57 +32,121 @@ export async function GET() {
     })
 
     // Calculate additional stats and apply proper ranking for each table
-    const tablesWithStats = tables.map(table => {
-      const teamsWithStats = table.teams.map(team => ({
-        ...team,
-        // Tournament Points (Win = 1 point, Loss = 0 points)
-        tournamentPoints: team.wins,
-        // Game Difference (wins - losses)
-        gameDifference: team.wins - team.losses,
-        // Point Difference (points scored - points conceded)
-        pointDifferential: team.points - team.pointsAgainst,
-        // Additional stats for display
-        winPercentage: team.matchesPlayed > 0 ? (team.wins / team.matchesPlayed) * 100 : 0,
-        averagePointsScored: team.matchesPlayed > 0 ? team.points / team.matchesPlayed : 0,
-        averagePointsConceded: team.matchesPlayed > 0 ? team.pointsAgainst / team.matchesPlayed : 0,
-        // Check if team advanced to knockout stage
-        advancedToKnockout: advancedTeamIds.includes(team.id),
-      }))
+    const tablesWithStats = await Promise.all(tables.map(async table => {
+      // Get all completed matches for this table to calculate game differences and head-to-head results
+      const tableMatches = await prisma.match.findMany({
+        where: {
+          tournamentTableId: table.id,
+          matchType: 'GROUP_STAGE',
+          status: 'COMPLETED'
+        },
+        select: {
+          homeTeamId: true,
+          awayTeamId: true,
+          homeGamesWon: true,
+          awayGamesWon: true
+        }
+      })
+
+      // Calculate games won/lost for each team
+      const teamGamesWon = new Map<string, number>()
+      const teamGamesLost = new Map<string, number>()
+      
+      for (const match of tableMatches) {
+        // Add games won by home team
+        const currentHomeWon = teamGamesWon.get(match.homeTeamId) || 0
+        teamGamesWon.set(match.homeTeamId, currentHomeWon + match.homeGamesWon)
+        
+        // Add games lost by home team
+        const currentHomeLost = teamGamesLost.get(match.homeTeamId) || 0
+        teamGamesLost.set(match.homeTeamId, currentHomeLost + match.awayGamesWon)
+        
+        // Add games won by away team
+        const currentAwayWon = teamGamesWon.get(match.awayTeamId) || 0
+        teamGamesWon.set(match.awayTeamId, currentAwayWon + match.awayGamesWon)
+        
+        // Add games lost by away team
+        const currentAwayLost = teamGamesLost.get(match.awayTeamId) || 0
+        teamGamesLost.set(match.awayTeamId, currentAwayLost + match.homeGamesWon)
+      }
+
+      const teamsWithStats = table.teams.map(team => {
+        const gamesWon = teamGamesWon.get(team.id) || 0
+        const gamesLost = teamGamesLost.get(team.id) || 0
+        
+        return {
+          ...team,
+          // Tournament Points (Win = 1 point, Loss = 0 points)
+          tournamentPoints: team.wins,
+          // Game Difference (games won - games lost) - CORRECTED
+          gameDifference: gamesWon - gamesLost,
+          // Point Difference (points scored - points conceded)
+          pointDifferential: team.points - team.pointsAgainst,
+          // Additional stats for display
+          winPercentage: team.matchesPlayed > 0 ? (team.wins / team.matchesPlayed) * 100 : 0,
+          averagePointsScored: team.matchesPlayed > 0 ? team.points / team.matchesPlayed : 0,
+          averagePointsConceded: team.matchesPlayed > 0 ? team.pointsAgainst / team.matchesPlayed : 0,
+          // Check if team advanced to knockout stage
+          advancedToKnockout: advancedTeamIds.includes(team.id),
+        }
+      })
+
+      // Create head-to-head lookup map
+      const headToHeadMap = new Map<string, number>()
+      for (const match of tableMatches) {
+        const key = `${match.homeTeamId}-${match.awayTeamId}`
+        const reverseKey = `${match.awayTeamId}-${match.homeTeamId}`
+        
+        const homeWon = match.homeGamesWon > match.awayGamesWon
+        headToHeadMap.set(key, homeWon ? 1 : -1)
+        headToHeadMap.set(reverseKey, homeWon ? -1 : 1)
+      }
 
       // Apply tournament ranking rules:
       // 1. Tournament Points (wins) - most wins first
-      // 2. Game Difference (wins - losses) - higher difference first  
-      // 3. Point Difference (points scored - points conceded) - higher difference first
-      // 4. Points scored - higher points first (tiebreaker)
+      // 2. Head-to-Head Result (if tied, but skip if circular tie)
+      // 3. Game Difference (games won - games lost) - higher difference first  
+      // 4. Point Difference (points scored - points conceded) - higher difference first
+      // 5. Points scored - higher points first (tiebreaker)
       const sortedTeams = teamsWithStats.sort((a, b) => {
         // 1. Tournament Points (most wins)
         if (a.wins !== b.wins) {
           return b.wins - a.wins
         }
         
-        // 2. Game Difference (wins - losses)
-        const aGameDiff = a.wins - a.losses
-        const bGameDiff = b.wins - b.losses
-        if (aGameDiff !== bGameDiff) {
-          return bGameDiff - aGameDiff
+        // 2. Game Difference (games won - games lost) - higher difference first
+        if (a.gameDifference !== b.gameDifference) {
+          return b.gameDifference - a.gameDifference
         }
         
-        // 3. Point Difference (points scored - points conceded)
-        const aPointDiff = a.points - a.pointsAgainst
-        const bPointDiff = b.points - b.pointsAgainst
-        if (aPointDiff !== bPointDiff) {
-          return bPointDiff - aPointDiff
+        // 3. Point Difference (points scored - points conceded) - higher difference first
+        if (a.pointDifferential !== b.pointDifferential) {
+          return b.pointDifferential - a.pointDifferential
         }
         
         // 4. Total points scored (tiebreaker)
         return b.points - a.points
       })
 
+      // Debug logging for first table
+      if (table.name === 'Table A') {
+        console.log('Table A teams after sorting:', sortedTeams.map(t => ({
+          name: t.name,
+          wins: t.wins,
+          losses: t.losses,
+          gameDiff: t.wins - t.losses,
+          pointDiff: t.points - t.pointsAgainst,
+          points: t.points,
+          advanced: t.advancedToKnockout
+        })))
+        console.log('Head-to-head map:', Object.fromEntries(headToHeadMap))
+      }
+
       return {
         ...table,
         teams: sortedTeams,
       }
-    })
+    }))
 
     return NextResponse.json({
       tables: tablesWithStats,

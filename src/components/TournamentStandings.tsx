@@ -48,6 +48,7 @@ const TournamentStandings = () => {
           throw new Error('Failed to fetch standings')
         }
         const data = await response.json()
+        console.log('Standings data received:', data)
         setStandingsData(data)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred')

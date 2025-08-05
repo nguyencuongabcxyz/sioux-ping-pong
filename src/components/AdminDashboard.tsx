@@ -141,6 +141,38 @@ const AdminDashboard = () => {
     }
   }
 
+  const regenerateKnockout = async () => {
+    if (!confirm('This will delete the current knockout bracket and regenerate it with the updated ranking logic. Continue?')) {
+      return
+    }
+
+    try {
+      // First delete existing knockout matches
+      const deleteResponse = await fetch('/api/tournament/reset', { method: 'POST' })
+      if (!deleteResponse.ok) {
+        throw new Error('Failed to reset tournament')
+      }
+
+      // Then regenerate knockout
+      const response = await fetch('/api/tournament/knockout', { method: 'POST' })
+      const data = await response.json()
+      
+      if (response.ok) {
+        await fetchTournamentStage()
+        await fetchMatches()
+        alert('Knockout bracket regenerated successfully with updated ranking logic!')
+      } else if (data.needsTieBreak) {
+        setTieBreakData(data)
+        setShowTieBreakModal(true)
+      } else {
+        alert(`Error: ${data.error}`)
+      }
+    } catch (error) {
+      console.error('Error regenerating knockout:', error)
+      alert('Failed to regenerate knockout bracket')
+    }
+  }
+
   const resetAllResults = async () => {
     if (!confirm('Are you sure you want to reset all match results? This will:\n\n• Clear all completed matches\n• Reset knockout bracket to initial state\n• Remove all game scores\n\nThis action cannot be undone.')) {
       return
@@ -361,6 +393,15 @@ const AdminDashboard = () => {
                 >
                   <Trophy className="w-4 h-4" />
                   Generate Knockout
+                </button>
+              )}
+              {tournamentStage.knockoutGenerated && (
+                <button
+                  onClick={regenerateKnockout}
+                  className="bg-orange-600 text-white px-6 py-3 rounded-lg hover:bg-orange-700 transition-colors flex items-center gap-2"
+                >
+                  <Trophy className="w-4 h-4" />
+                  Regenerate Knockout
                 </button>
               )}
               <button
