@@ -16,6 +16,7 @@ import {
   RotateCcw,
   Zap
 } from 'lucide-react'
+import QuarterFinalSelection from './QuarterFinalSelection'
 
 interface Game {
   id: string
@@ -57,6 +58,7 @@ const AdminDashboard = () => {
   const [showTieBreakModal, setShowTieBreakModal] = useState(false)
   const [tieBreakData, setTieBreakData] = useState<any>(null)
   const [selectedTieBreakTeams, setSelectedTieBreakTeams] = useState<string[]>([])
+  const [showQuarterFinalSelection, setShowQuarterFinalSelection] = useState(false)
   const [tableFilter, setTableFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null)
@@ -92,25 +94,38 @@ const AdminDashboard = () => {
     }
   }
 
-  const generateKnockout = async () => {
+  const handleManualBracketGeneration = async (matches: any[]) => {
     try {
-      const response = await fetch('/api/tournament/knockout', { method: 'POST' })
-      const data = await response.json()
+      // Extract team IDs from the matches
+      const selectedTeamIds = matches.flatMap(match => [match.homeTeamId, match.awayTeamId]).filter(id => id)
+      
+      const response = await fetch('/api/tournament/knockout/manual', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ selectedTeamIds })
+      })
       
       if (response.ok) {
         await fetchTournamentStage()
         await fetchMatches() // Refresh to show new knockout matches
-        alert('Knockout bracket generated successfully!')
-      } else if (data.needsTieBreak) {
-        // Show tie-break modal
-        setTieBreakData(data)
-        setShowTieBreakModal(true)
+        setShowQuarterFinalSelection(false)
+        setNotification({
+          type: 'success',
+          message: 'Quarter-final bracket generated successfully with manual team assignment!'
+        })
       } else {
-        alert(`Error: ${data.error}`)
+        const errorData = await response.json()
+        setNotification({
+          type: 'error',
+          message: `Error: ${errorData.error}`
+        })
       }
     } catch (error) {
-      console.error('Error generating knockout:', error)
-      alert('Failed to generate knockout bracket')
+      console.error('Error generating manual knockout:', error)
+      setNotification({
+        type: 'error',
+        message: 'Failed to generate knockout bracket'
+      })
     }
   }
 
@@ -430,11 +445,11 @@ const AdminDashboard = () => {
             <div className="flex gap-3">
               {!tournamentStage.knockoutGenerated && (
                 <button
-                  onClick={generateKnockout}
+                  onClick={() => setShowQuarterFinalSelection(true)}
                   className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
                 >
                   <Trophy className="w-4 h-4" />
-                  Generate Knockout
+                  Assign Quarter-Final Teams
                 </button>
               )}
               {tournamentStage.knockoutGenerated && (
@@ -1079,6 +1094,20 @@ const AdminDashboard = () => {
             <Calendar className="w-12 h-12 mx-auto mb-4 text-gray-300" />
             <h3 className="text-lg font-medium text-gray-700 mb-2">No Matches Found</h3>
             <p className="text-gray-500">No matches have been scheduled yet.</p>
+          </div>
+        )}
+
+        {/* Quarter-Final Selection Modal */}
+        {showQuarterFinalSelection && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <QuarterFinalSelection
+                  onGenerateBracket={handleManualBracketGeneration}
+                  onCancel={() => setShowQuarterFinalSelection(false)}
+                />
+              </div>
+            </div>
           </div>
         )}
 

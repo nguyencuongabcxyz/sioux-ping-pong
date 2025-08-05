@@ -47,7 +47,6 @@ const BracketPage = () => {
   const [bracketData, setBracketData] = useState<BracketData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [generating, setGenerating] = useState(false)
 
   useEffect(() => {
     fetchBracketData()
@@ -66,21 +65,7 @@ const BracketPage = () => {
     }
   }
 
-  const generateKnockout = async () => {
-    setGenerating(true)
-    try {
-      const response = await fetch('/api/tournament/knockout', { method: 'POST' })
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error)
-      }
-      await fetchBracketData()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate knockout')
-    } finally {
-      setGenerating(false)
-    }
-  }
+
 
   const formatTime = (dateString: string) => {
     return new Date(dateString).toLocaleString('en-US', {
@@ -270,13 +255,14 @@ const BracketPage = () => {
           </div>
           
           {!bracketData.knockoutGenerated && bracketData.groupStageCompleted && (
-            <button
-              onClick={generateKnockout}
-              disabled={generating}
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {generating ? 'Generating...' : 'Generate Knockout Bracket'}
-            </button>
+            <div className="text-center">
+              <p className="text-gray-600 mb-2">
+                Group stage completed! Quarter-final teams must be selected manually by the tournament administrator.
+              </p>
+              <p className="text-sm text-gray-500">
+                Please go to the Admin Dashboard to select the 8 teams for quarter-finals.
+              </p>
+            </div>
           )}
         </div>
       </div>
