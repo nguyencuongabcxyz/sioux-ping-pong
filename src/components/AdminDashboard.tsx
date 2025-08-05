@@ -62,6 +62,7 @@ const AdminDashboard = () => {
   const [tableFilter, setTableFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null)
+  const [advancingStage, setAdvancingStage] = useState(false)
 
   useEffect(() => {
     fetchMatches()
@@ -126,6 +127,66 @@ const AdminDashboard = () => {
         type: 'error',
         message: 'Failed to generate knockout bracket'
       })
+    }
+  }
+
+  const advanceToSemiFinals = async () => {
+    setAdvancingStage(true)
+    try {
+      const response = await fetch('/api/tournament/knockout/advance', { method: 'POST' })
+      
+      if (response.ok) {
+        await fetchTournamentStage()
+        await fetchMatches() // Refresh to show new semi-final matches
+        setNotification({
+          type: 'success',
+          message: 'Semi-final matches generated successfully!'
+        })
+      } else {
+        const errorData = await response.json()
+        setNotification({
+          type: 'error',
+          message: `Error: ${errorData.error}`
+        })
+      }
+    } catch (error) {
+      console.error('Error advancing to semi-finals:', error)
+      setNotification({
+        type: 'error',
+        message: 'Failed to advance to semi-finals'
+      })
+    } finally {
+      setAdvancingStage(false)
+    }
+  }
+
+  const advanceToFinal = async () => {
+    setAdvancingStage(true)
+    try {
+      const response = await fetch('/api/tournament/knockout/final', { method: 'POST' })
+      
+      if (response.ok) {
+        await fetchTournamentStage()
+        await fetchMatches() // Refresh to show new final match
+        setNotification({
+          type: 'success',
+          message: 'Final match generated successfully!'
+        })
+      } else {
+        const errorData = await response.json()
+        setNotification({
+          type: 'error',
+          message: `Error: ${errorData.error}`
+        })
+      }
+    } catch (error) {
+      console.error('Error advancing to final:', error)
+      setNotification({
+        type: 'error',
+        message: 'Failed to advance to final'
+      })
+    } finally {
+      setAdvancingStage(false)
     }
   }
 
@@ -476,6 +537,34 @@ const AdminDashboard = () => {
                 Reset All Results
               </button>
             </div>
+
+            {/* Tournament Advancement Buttons */}
+            {tournamentStage.knockoutGenerated && (
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <h4 className="text-sm font-medium text-gray-700 mb-3">Tournament Advancement</h4>
+                <div className="flex gap-3">
+                  <button
+                    onClick={advanceToSemiFinals}
+                    disabled={advancingStage}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                  >
+                    <Target className="w-4 h-4" />
+                    {advancingStage ? 'Advancing...' : 'Advance to Semi-Finals'}
+                  </button>
+                  <button
+                    onClick={advanceToFinal}
+                    disabled={advancingStage}
+                    className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                  >
+                    <Crown className="w-4 h-4" />
+                    {advancingStage ? 'Advancing...' : 'Advance to Final'}
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Use these buttons to advance the tournament after completing all matches in the current stage.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}

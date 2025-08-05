@@ -257,10 +257,21 @@ const BracketPage = () => {
           {!bracketData.knockoutGenerated && bracketData.groupStageCompleted && (
             <div className="text-center">
               <p className="text-gray-600 mb-2">
-                Group stage completed! Quarter-final teams must be selected manually by the tournament administrator.
+                Group stage completed! Quarter-final teams must be assigned manually by the tournament administrator.
               </p>
               <p className="text-sm text-gray-500">
-                Please go to the Admin Dashboard to select the 8 teams for quarter-finals.
+                Please go to the Admin Dashboard to assign the 8 qualified teams to quarter-final matches.
+              </p>
+            </div>
+          )}
+          
+          {bracketData.knockoutGenerated && (
+            <div className="text-center">
+              <p className="text-gray-600 mb-2">
+                Quarter-final bracket generated! Use the Admin Dashboard to advance the tournament when matches are completed.
+              </p>
+              <p className="text-sm text-gray-500">
+                Semi-finals and finals will be generated automatically when all matches in the current stage are completed.
               </p>
             </div>
           )}
