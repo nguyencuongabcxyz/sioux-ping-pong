@@ -33,6 +33,7 @@ interface StandingsData {
   tables: TournamentTable[]
   knockoutGenerated: boolean
   advancedTeamIds: string[]
+  groupStageCompleted?: boolean
 }
 
 const TournamentStandings = () => {
@@ -58,7 +59,16 @@ const TournamentStandings = () => {
     }
 
     fetchStandings()
-  }, [])
+
+    // Set up polling to check for knockout generation or group completion every 5 seconds
+    const interval = setInterval(() => {
+      if (!standingsData?.knockoutGenerated && !standingsData?.groupStageCompleted) {
+        fetchStandings()
+      }
+    }, 5000)
+
+    return () => clearInterval(interval)
+  }, [standingsData?.knockoutGenerated])
 
   if (loading) {
     return (
@@ -188,7 +198,7 @@ const TournamentStandings = () => {
                           )}
                         </div>
                         <div className="text-sm font-medium text-gray-900">{team.name}</div>
-                        {standingsData?.knockoutGenerated && team.advancedToKnockout && (
+                        {(standingsData?.knockoutGenerated || standingsData?.groupStageCompleted) && team.advancedToKnockout && (
                           <div className="flex items-center gap-1 mt-1">
                             <Target className="w-3 h-3 text-green-600" />
                             <span className="text-xs text-green-600 font-medium">Advanced</span>
@@ -262,7 +272,7 @@ const TournamentStandings = () => {
             <h3 className="text-sm font-medium text-green-800">Knockout Stage Active</h3>
           </div>
           <p className="text-xs text-green-700">
-            Teams marked with "Advanced" have qualified for the knockout stage. 
+            Teams marked with &quot;Advanced&quot; have qualified for the knockout stage. 
             Eliminated teams are grayed out.
           </p>
         </div>

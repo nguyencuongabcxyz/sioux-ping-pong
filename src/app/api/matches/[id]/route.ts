@@ -146,6 +146,40 @@ export async function PATCH(
           pointsAgainst: { increment: updatedMatch.homeScore || 0 },
         },
       })
+
+      // Check if this was a group stage match and if all group stage matches are now completed
+      if (currentMatch.matchType === 'GROUP_STAGE') {
+        const incompleteGroupMatches = await prisma.match.count({
+          where: {
+            matchType: 'GROUP_STAGE',
+            status: { not: 'COMPLETED' }
+          }
+        })
+
+        console.log(`Match ${matchId} completed. ${incompleteGroupMatches} group stage matches remaining`)
+
+        // If all group stage matches are completed, mark group stage as completed
+        if (incompleteGroupMatches === 0) {
+          console.log('All group stage matches completed! Marking group stage as completed...')
+          try {
+            const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/tournament/check-group-completion`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            })
+
+            if (response.ok) {
+              const result = await response.json()
+              console.log('Group completion result:', result)
+            } else {
+              console.error('Failed to mark group stage as completed')
+            }
+          } catch (error) {
+            console.error('Error calling group completion check:', error)
+          }
+        }
+      }
     }
 
     return NextResponse.json(updatedMatch)

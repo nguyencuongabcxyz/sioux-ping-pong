@@ -59,6 +59,7 @@ const AdminDashboard = () => {
   const [selectedTieBreakTeams, setSelectedTieBreakTeams] = useState<string[]>([])
   const [tableFilter, setTableFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null)
 
   useEffect(() => {
     fetchMatches()
@@ -381,6 +382,30 @@ const AdminDashboard = () => {
 
   return (
     <div className="space-y-6">
+      {/* Notification */}
+      {notification && (
+        <div className={`rounded-lg p-4 border ${
+          notification.type === 'success' 
+            ? 'bg-green-50 border-green-200 text-green-800' 
+            : notification.type === 'error'
+            ? 'bg-red-50 border-red-200 text-red-800'
+            : 'bg-blue-50 border-blue-200 text-blue-800'
+        }`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">{notification.type === 'success' ? '✅' : notification.type === 'error' ? '❌' : 'ℹ️'}</span>
+              <span className="font-medium">{notification.message}</span>
+            </div>
+            <button
+              onClick={() => setNotification(null)}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Tournament Stage Status */}
       {tournamentStage && (
         <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-6 border">
