@@ -6,7 +6,7 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { format, status, games, homeScore, awayScore } = await request.json()
+    const { format, status, games, homeScore, awayScore, scheduledAt } = await request.json()
     const matchId = params.id
 
     // Get the current match to check previous state
@@ -35,6 +35,7 @@ export async function PATCH(
         awayScore,
         status,
         completedAt: status === 'COMPLETED' ? new Date() : null,
+        ...(scheduledAt && { scheduledAt: new Date(scheduledAt) }),
       }
     }
     // Handle new table tennis format (games)
@@ -94,12 +95,14 @@ export async function PATCH(
         awayScore: totalAwayPoints,
         status: isMatchCompleted ? 'COMPLETED' : (status || currentMatch.status),
         completedAt: isMatchCompleted ? new Date() : null,
+        ...(scheduledAt && { scheduledAt: new Date(scheduledAt) }),
       }
     }
     // Handle status-only updates
     else if (status) {
       updateData = { status }
       if (format) updateData.format = format
+      if (scheduledAt) updateData.scheduledAt = new Date(scheduledAt)
     }
 
     // Update the match

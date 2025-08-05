@@ -10,7 +10,10 @@ import {
   LogOut, 
   Edit3, 
   Save, 
-  X 
+  X,
+  Target,
+  Crown,
+  RotateCcw
 } from 'lucide-react'
 
 interface Game {
@@ -27,13 +30,15 @@ interface Match {
   scheduledAt: string
   status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'
   format: 'BO3' | 'BO5'
+  matchType: 'GROUP_STAGE' | 'KNOCKOUT'
+  round?: 'QUARTER_FINAL' | 'SEMI_FINAL' | 'FINAL'
   homeGamesWon: number
   awayGamesWon: number
   homeScore?: number // Legacy field
   awayScore?: number // Legacy field
-  homeTeam: { id: string; name: string }
-  awayTeam: { id: string; name: string }
-  tournamentTable: { id: string; name: string }
+  homeTeam: { id: string; name: string; member1Image?: string; member2Image?: string }
+  awayTeam: { id: string; name: string; member1Image?: string; member2Image?: string }
+  tournamentTable?: { id: string; name: string }
   games: Game[]
 }
 
@@ -45,6 +50,7 @@ const AdminDashboard = () => {
   const [editForm, setEditForm] = useState({
     format: 'BO3' as Match['format'],
     status: 'SCHEDULED' as Match['status'],
+    scheduledAt: '',
     games: [] as Array<{ gameNumber: number; homeScore: string; awayScore: string; status: Game['status'] }>
   })
 
@@ -96,6 +102,27 @@ const AdminDashboard = () => {
     }
   }
 
+  const resetAllResults = async () => {
+    if (!confirm('Are you sure you want to reset all match results? This will:\n\n• Clear all completed matches\n• Reset knockout bracket to initial state\n• Remove all game scores\n\nThis action cannot be undone.')) {
+      return
+    }
+
+    try {
+      const response = await fetch('/api/tournament/reset', { method: 'POST' })
+      if (response.ok) {
+        await fetchTournamentStage()
+        await fetchMatches() // Refresh to show reset matches
+        alert('All match results have been reset successfully!')
+      } else {
+        const errorData = await response.json()
+        alert(`Error: ${errorData.error}`)
+      }
+    } catch (error) {
+      console.error('Error resetting results:', error)
+      alert('Failed to reset match results')
+    }
+  }
+
   const handleEditMatch = (match: Match) => {
     setEditingMatch(match.id)
     
@@ -113,9 +140,14 @@ const AdminDashboard = () => {
       })
     }
     
+    // Format date for input field (YYYY-MM-DDTHH:MM)
+    const scheduledDate = new Date(match.scheduledAt)
+    const formattedDate = scheduledDate.toISOString().slice(0, 16)
+    
     setEditForm({
       format: match.format,
       status: match.status,
+      scheduledAt: formattedDate,
       games: initialGames
     })
   }
@@ -140,6 +172,7 @@ const AdminDashboard = () => {
         body: JSON.stringify({
           format: editForm.format,
           status: editForm.status,
+          scheduledAt: editForm.scheduledAt,
           games: gamesData,
         }),
       })
@@ -161,6 +194,7 @@ const AdminDashboard = () => {
     setEditForm({ 
       format: 'BO3', 
       status: 'SCHEDULED', 
+      scheduledAt: '',
       games: [] 
     })
   }
@@ -200,6 +234,34 @@ const AdminDashboard = () => {
     })
   }
 
+  const getMatchTypeInfo = (matchType: string, round?: string) => {
+    if (matchType === 'KNOCKOUT') {
+      const roundLabels = {
+        'QUARTER_FINAL': 'Quarter-Final',
+        'SEMI_FINAL': 'Semi-Final',
+        'FINAL': 'Final'
+      }
+      return {
+        label: round ? roundLabels[round as keyof typeof roundLabels] : 'Knockout',
+        icon: round === 'FINAL' ? Crown : Target,
+        color: 'text-purple-600',
+        bgColor: 'bg-purple-50',
+        borderColor: 'border-purple-200'
+      }
+    }
+    return {
+      label: 'Group Stage',
+      icon: Trophy,
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50',
+      borderColor: 'border-blue-200'
+    }
+  }
+
+  // Separate matches by type
+  const groupStageMatches = matches.filter(match => match.matchType === 'GROUP_STAGE')
+  const knockoutMatches = matches.filter(match => match.matchType === 'KNOCKOUT')
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -231,15 +293,24 @@ const AdminDashboard = () => {
               </div>
             </div>
             
-            {!tournamentStage.knockoutGenerated && (
+            <div className="flex gap-3">
+              {!tournamentStage.knockoutGenerated && (
+                <button
+                  onClick={generateKnockout}
+                  className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
+                >
+                  <Trophy className="w-4 h-4" />
+                  Generate Knockout
+                </button>
+              )}
               <button
-                onClick={generateKnockout}
-                className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
+                onClick={resetAllResults}
+                className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
               >
-                <Trophy className="w-4 h-4" />
-                Generate Knockout
+                <RotateCcw className="w-4 h-4" />
+                Reset All Results
               </button>
-            )}
+            </div>
           </div>
         </div>
       )}
@@ -325,157 +396,487 @@ const AdminDashboard = () => {
       </div>
 
       {/* Matches Management */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">Manage Matches</h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Match
-                </th>
-                <th className="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Table
-                </th>
-                <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Scheduled
-                </th>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Result
-                </th>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {matches.map((match) => (
-                <tr key={match.id} className="hover:bg-gray-50">
-                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
-                      <div className="font-medium">{match.homeTeam.name} vs</div>
-                      <div className="font-medium">{match.awayTeam.name}</div>
-                      <div className="text-xs text-gray-500 sm:hidden">
-                        {match.tournamentTable.name} • {formatDateTime(match.scheduledAt)}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {match.tournamentTable.name}
-                  </td>
-                  <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {formatDateTime(match.scheduledAt)}
-                  </td>
-                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                    {editingMatch === match.id ? (
-                      <select
-                        value={editForm.status}
-                        onChange={(e) => setEditForm({
-                          ...editForm,
-                          status: e.target.value as Match['status']
-                        })}
-                        className="border border-gray-300 rounded px-2 py-1 text-sm"
-                      >
-                        <option value="SCHEDULED">Scheduled</option>
-                        <option value="IN_PROGRESS">In Progress</option>
-                        <option value="COMPLETED">Completed</option>
-                        <option value="CANCELLED">Cancelled</option>
-                      </select>
-                    ) : (
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        match.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
-                        match.status === 'IN_PROGRESS' ? 'bg-yellow-100 text-yellow-800' :
-                        match.status === 'SCHEDULED' ? 'bg-blue-100 text-blue-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
-                        {match.status}
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {editingMatch === match.id ? (
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 mb-2">
-                          <label className="text-xs font-medium">Format:</label>
+      <div className="space-y-6">
+        {/* Group Stage Matches */}
+        {groupStageMatches.length > 0 && (
+          <div className="bg-white rounded-lg shadow overflow-hidden border border-blue-200">
+            <div className="px-6 py-4 border-b border-blue-200 bg-blue-50">
+              <div className="flex items-center gap-3">
+                <Trophy className="w-5 h-5 text-blue-600" />
+                <h3 className="text-lg font-medium text-blue-900">Group Stage Matches</h3>
+                <span className="text-sm text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+                  Round Robin
+                </span>
+              </div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-blue-100">
+                <thead className="bg-blue-50">
+                  <tr>
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
+                      Match
+                    </th>
+                    <th className="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
+                      Table
+                    </th>
+                                         <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
+                       Date/Time
+                     </th>
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
+                      Result
+                    </th>
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-blue-100">
+                  {groupStageMatches.map((match) => (
+                    <tr key={match.id} className="hover:bg-blue-50">
+                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="flex -space-x-1">
+                              {match.homeTeam.member1Image && (
+                                <img 
+                                  src={match.homeTeam.member1Image} 
+                                  alt="Player 1" 
+                                  className="w-6 h-6 rounded-full border border-white object-cover shadow-sm bg-gray-100"
+                                  onError={(e) => { 
+                                    const target = e.target as HTMLImageElement
+                                    target.src = '/api/placeholder/24/24'
+                                  }}
+                                />
+                              )}
+                              {match.homeTeam.member2Image && (
+                                <img 
+                                  src={match.homeTeam.member2Image} 
+                                  alt="Player 2" 
+                                  className="w-6 h-6 rounded-full border border-white object-cover shadow-sm bg-gray-100"
+                                  onError={(e) => { 
+                                    const target = e.target as HTMLImageElement
+                                    target.src = '/api/placeholder/24/24'
+                                  }}
+                                />
+                              )}
+                              {(!match.homeTeam.member1Image && !match.homeTeam.member2Image) && (
+                                <div className="w-6 h-6 rounded-full border border-white bg-gray-200 flex items-center justify-center">
+                                  <Users className="w-3 h-3 text-gray-600" />
+                                </div>
+                              )}
+                            </div>
+                            <span className="font-medium">{match.homeTeam.name}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="flex -space-x-1">
+                              {match.awayTeam.member1Image && (
+                                <img 
+                                  src={match.awayTeam.member1Image} 
+                                  alt="Player 1" 
+                                  className="w-6 h-6 rounded-full border border-white object-cover shadow-sm bg-gray-100"
+                                  onError={(e) => { 
+                                    const target = e.target as HTMLImageElement
+                                    target.src = '/api/placeholder/24/24'
+                                  }}
+                                />
+                              )}
+                              {match.awayTeam.member2Image && (
+                                <img 
+                                  src={match.awayTeam.member2Image} 
+                                  alt="Player 2" 
+                                  className="w-6 h-6 rounded-full border border-white object-cover shadow-sm bg-gray-100"
+                                  onError={(e) => { 
+                                    const target = e.target as HTMLImageElement
+                                    target.src = '/api/placeholder/24/24'
+                                  }}
+                                />
+                              )}
+                              {(!match.awayTeam.member1Image && !match.awayTeam.member2Image) && (
+                                <div className="w-6 h-6 rounded-full border border-white bg-gray-200 flex items-center justify-center">
+                                  <Users className="w-3 h-3 text-gray-600" />
+                                </div>
+                              )}
+                            </div>
+                            <span className="font-medium">{match.awayTeam.name}</span>
+                          </div>
+                          <div className="text-xs text-gray-500 sm:hidden mt-1">
+                            {match.tournamentTable?.name} • {formatDateTime(match.scheduledAt)}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {match.tournamentTable?.name}
+                      </td>
+                      <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {editingMatch === match.id ? (
+                          <input
+                            type="datetime-local"
+                            value={editForm.scheduledAt}
+                            onChange={(e) => setEditForm({ ...editForm, scheduledAt: e.target.value })}
+                            className="border border-gray-300 rounded px-2 py-1 text-xs"
+                          />
+                        ) : (
+                          formatDateTime(match.scheduledAt)
+                        )}
+                      </td>
+                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                        {editingMatch === match.id ? (
                           <select
-                            value={editForm.format}
+                            value={editForm.status}
                             onChange={(e) => setEditForm({
                               ...editForm,
-                              format: e.target.value as Match['format']
+                              status: e.target.value as Match['status']
                             })}
-                            className="border border-gray-300 rounded px-2 py-1 text-xs"
+                            className="border border-gray-300 rounded px-2 py-1 text-sm"
                           >
-                            <option value="BO3">Best of 3</option>
-                            <option value="BO5">Best of 5</option>
+                            <option value="SCHEDULED">Scheduled</option>
+                            <option value="IN_PROGRESS">In Progress</option>
+                            <option value="COMPLETED">Completed</option>
+                            <option value="CANCELLED">Cancelled</option>
                           </select>
-                        </div>
-                        
-                        {editForm.games.map((game) => (
-                          <div key={game.gameNumber} className="flex items-center gap-2">
-                            <span className="text-xs w-12">Game {game.gameNumber}:</span>
-                            <input
-                              type="number"
-                              placeholder="0"
-                              value={game.homeScore}
-                              onChange={(e) => updateGameScore(game.gameNumber, 'homeScore', e.target.value)}
-                              className="w-12 border border-gray-300 rounded px-1 py-1 text-xs"
-                              min="0"
-                              max="30"
-                            />
-                            <span className="text-xs">-</span>
-                            <input
-                              type="number"
-                              placeholder="0"
-                              value={game.awayScore}
-                              onChange={(e) => updateGameScore(game.gameNumber, 'awayScore', e.target.value)}
-                              className="w-12 border border-gray-300 rounded px-1 py-1 text-xs"
-                              min="0"
-                              max="30"
-                            />
+                        ) : (
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            match.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
+                            match.status === 'IN_PROGRESS' ? 'bg-yellow-100 text-yellow-800' :
+                            match.status === 'SCHEDULED' ? 'bg-blue-100 text-blue-800' :
+                            'bg-red-100 text-red-800'
+                          }`}>
+                            {match.status}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {editingMatch === match.id ? (
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2 mb-2">
+                              <label className="text-xs font-medium">Format:</label>
+                              <select
+                                value={editForm.format}
+                                onChange={(e) => setEditForm({
+                                  ...editForm,
+                                  format: e.target.value as Match['format']
+                                })}
+                                className="border border-gray-300 rounded px-2 py-1 text-xs"
+                              >
+                                <option value="BO3">Best of 3</option>
+                                <option value="BO5">Best of 5</option>
+                              </select>
+                            </div>
+                            
+                            {editForm.games.map((game) => (
+                              <div key={game.gameNumber} className="flex items-center gap-2">
+                                <span className="text-xs w-12">Game {game.gameNumber}:</span>
+                                <input
+                                  type="number"
+                                  placeholder="0"
+                                  value={game.homeScore}
+                                  onChange={(e) => updateGameScore(game.gameNumber, 'homeScore', e.target.value)}
+                                  className="w-12 border border-gray-300 rounded px-1 py-1 text-xs"
+                                  min="0"
+                                  max="30"
+                                />
+                                <span className="text-xs">-</span>
+                                <input
+                                  type="number"
+                                  placeholder="0"
+                                  value={game.awayScore}
+                                  onChange={(e) => updateGameScore(game.gameNumber, 'awayScore', e.target.value)}
+                                  className="w-12 border border-gray-300 rounded px-1 py-1 text-xs"
+                                  min="0"
+                                  max="30"
+                                />
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-xs">
-                        {formatMatchResult(match)}
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    {editingMatch === match.id ? (
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleSaveMatch(match.id)}
-                          className="text-green-600 hover:text-green-900"
-                        >
-                          <Save className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={handleCancelEdit}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => handleEditMatch(match)}
-                        className="text-blue-600 hover:text-blue-900"
-                      >
-                        <Edit3 className="w-4 h-4" />
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                        ) : (
+                          <div className="text-xs">
+                            {formatMatchResult(match)}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        {editingMatch === match.id ? (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleSaveMatch(match.id)}
+                              className="text-green-600 hover:text-green-900"
+                            >
+                              <Save className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={handleCancelEdit}
+                              className="text-red-600 hover:text-red-900"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => handleEditMatch(match)}
+                            className="text-blue-600 hover:text-blue-900"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Knockout Stage Matches */}
+        {knockoutMatches.length > 0 && (
+          <div className="bg-white rounded-lg shadow overflow-hidden border border-purple-200">
+            <div className="px-6 py-4 border-b border-purple-200 bg-purple-50">
+              <div className="flex items-center gap-3">
+                <Crown className="w-5 h-5 text-purple-600" />
+                <h3 className="text-lg font-medium text-purple-900">Knockout Stage Matches</h3>
+                <span className="text-sm text-purple-600 bg-purple-100 px-2 py-1 rounded-full">
+                  Single Elimination
+                </span>
+              </div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-purple-100">
+                <thead className="bg-purple-50">
+                  <tr>
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-purple-700 uppercase tracking-wider">
+                      Match
+                    </th>
+                    <th className="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-purple-700 uppercase tracking-wider">
+                      Round
+                    </th>
+                                         <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-purple-700 uppercase tracking-wider">
+                       Date/Time
+                     </th>
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-purple-700 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-purple-700 uppercase tracking-wider">
+                      Result
+                    </th>
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-purple-700 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-purple-100">
+                  {knockoutMatches.map((match) => {
+                    const matchTypeInfo = getMatchTypeInfo(match.matchType, match.round)
+                    return (
+                      <tr key={match.id} className="hover:bg-purple-50">
+                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">
+                            <div className="flex items-center gap-2 mb-1">
+                              <div className="flex -space-x-1">
+                                {match.homeTeam.member1Image && (
+                                  <img 
+                                    src={match.homeTeam.member1Image} 
+                                    alt="Player 1" 
+                                    className="w-6 h-6 rounded-full border border-white object-cover shadow-sm bg-gray-100"
+                                    onError={(e) => { 
+                                      const target = e.target as HTMLImageElement
+                                      target.src = '/api/placeholder/24/24'
+                                    }}
+                                  />
+                                )}
+                                {match.homeTeam.member2Image && (
+                                  <img 
+                                    src={match.homeTeam.member2Image} 
+                                    alt="Player 2" 
+                                    className="w-6 h-6 rounded-full border border-white object-cover shadow-sm bg-gray-100"
+                                    onError={(e) => { 
+                                      const target = e.target as HTMLImageElement
+                                      target.src = '/api/placeholder/24/24'
+                                    }}
+                                  />
+                                )}
+                                {(!match.homeTeam.member1Image && !match.homeTeam.member2Image) && (
+                                  <div className="w-6 h-6 rounded-full border border-white bg-gray-200 flex items-center justify-center">
+                                    <Users className="w-3 h-3 text-gray-600" />
+                                  </div>
+                                )}
+                              </div>
+                              <span className="font-medium">{match.homeTeam.name}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="flex -space-x-1">
+                                {match.awayTeam.member1Image && (
+                                  <img 
+                                    src={match.awayTeam.member1Image} 
+                                    alt="Player 1" 
+                                    className="w-6 h-6 rounded-full border border-white object-cover shadow-sm bg-gray-100"
+                                    onError={(e) => { 
+                                      const target = e.target as HTMLImageElement
+                                      target.src = '/api/placeholder/24/24'
+                                    }}
+                                  />
+                                )}
+                                {match.awayTeam.member2Image && (
+                                  <img 
+                                    src={match.awayTeam.member2Image} 
+                                    alt="Player 2" 
+                                    className="w-6 h-6 rounded-full border border-white object-cover shadow-sm bg-gray-100"
+                                    onError={(e) => { 
+                                      const target = e.target as HTMLImageElement
+                                      target.src = '/api/placeholder/24/24'
+                                    }}
+                                  />
+                                )}
+                                {(!match.awayTeam.member1Image && !match.awayTeam.member2Image) && (
+                                  <div className="w-6 h-6 rounded-full border border-white bg-gray-200 flex items-center justify-center">
+                                    <Users className="w-3 h-3 text-gray-600" />
+                                  </div>
+                                )}
+                              </div>
+                              <span className="font-medium">{match.awayTeam.name}</span>
+                            </div>
+                            <div className="text-xs text-gray-500 sm:hidden mt-1">
+                              {matchTypeInfo.label} • {formatDateTime(match.scheduledAt)}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <div className="flex items-center gap-1">
+                            <matchTypeInfo.icon className="w-3 h-3 text-purple-600" />
+                            <span>{matchTypeInfo.label}</span>
+                          </div>
+                        </td>
+                        <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {editingMatch === match.id ? (
+                            <input
+                              type="datetime-local"
+                              value={editForm.scheduledAt}
+                              onChange={(e) => setEditForm({ ...editForm, scheduledAt: e.target.value })}
+                              className="border border-gray-300 rounded px-2 py-1 text-xs"
+                            />
+                          ) : (
+                            formatDateTime(match.scheduledAt)
+                          )}
+                        </td>
+                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                          {editingMatch === match.id ? (
+                            <select
+                              value={editForm.status}
+                              onChange={(e) => setEditForm({
+                                ...editForm,
+                                status: e.target.value as Match['status']
+                              })}
+                              className="border border-gray-300 rounded px-2 py-1 text-sm"
+                            >
+                              <option value="SCHEDULED">Scheduled</option>
+                              <option value="IN_PROGRESS">In Progress</option>
+                              <option value="COMPLETED">Completed</option>
+                              <option value="CANCELLED">Cancelled</option>
+                            </select>
+                          ) : (
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              match.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
+                              match.status === 'IN_PROGRESS' ? 'bg-yellow-100 text-yellow-800' :
+                              match.status === 'SCHEDULED' ? 'bg-blue-100 text-blue-800' :
+                              'bg-red-100 text-red-800'
+                            }`}>
+                              {match.status}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {editingMatch === match.id ? (
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2 mb-2">
+                                <label className="text-xs font-medium">Format:</label>
+                                <select
+                                  value={editForm.format}
+                                  onChange={(e) => setEditForm({
+                                    ...editForm,
+                                    format: e.target.value as Match['format']
+                                  })}
+                                  className="border border-gray-300 rounded px-2 py-1 text-xs"
+                                >
+                                  <option value="BO3">Best of 3</option>
+                                  <option value="BO5">Best of 5</option>
+                                </select>
+                              </div>
+                              
+                              {editForm.games.map((game) => (
+                                <div key={game.gameNumber} className="flex items-center gap-2">
+                                  <span className="text-xs w-12">Game {game.gameNumber}:</span>
+                                  <input
+                                    type="number"
+                                    placeholder="0"
+                                    value={game.homeScore}
+                                    onChange={(e) => updateGameScore(game.gameNumber, 'homeScore', e.target.value)}
+                                    className="w-12 border border-gray-300 rounded px-1 py-1 text-xs"
+                                    min="0"
+                                    max="30"
+                                  />
+                                  <span className="text-xs">-</span>
+                                  <input
+                                    type="number"
+                                    placeholder="0"
+                                    value={game.awayScore}
+                                    onChange={(e) => updateGameScore(game.gameNumber, 'awayScore', e.target.value)}
+                                    className="w-12 border border-gray-300 rounded px-1 py-1 text-xs"
+                                    min="0"
+                                    max="30"
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-xs">
+                              {formatMatchResult(match)}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          {editingMatch === match.id ? (
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleSaveMatch(match.id)}
+                                className="text-green-600 hover:text-green-900"
+                              >
+                                <Save className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={handleCancelEdit}
+                                className="text-red-600 hover:text-red-900"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => handleEditMatch(match)}
+                              className="text-purple-600 hover:text-purple-900"
+                            >
+                              <Edit3 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* No Matches Message */}
+        {matches.length === 0 && (
+          <div className="bg-white rounded-lg shadow p-8 text-center">
+            <Calendar className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+            <h3 className="text-lg font-medium text-gray-700 mb-2">No Matches Found</h3>
+            <p className="text-gray-500">No matches have been scheduled yet.</p>
+          </div>
+        )}
       </div>
     </div>
   )

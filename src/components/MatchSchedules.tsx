@@ -1,13 +1,15 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Calendar, Clock, MapPin, Trophy, Users, Filter } from 'lucide-react'
+import { Calendar, Clock, MapPin, Trophy, Users, Filter, Target, Crown } from 'lucide-react'
 
 interface Team {
   id: string
   name: string
   wins: number
   losses: number
+  member1Image?: string
+  member2Image?: string
 }
 
 interface TournamentTable {
@@ -29,6 +31,8 @@ interface Match {
   scheduledAt: string
   status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'
   format: 'BO3' | 'BO5'
+  matchType: 'GROUP_STAGE' | 'KNOCKOUT'
+  round?: 'QUARTER_FINAL' | 'SEMI_FINAL' | 'FINAL'
   homeGamesWon: number
   awayGamesWon: number
   homeScore?: number // Legacy/total points
@@ -37,7 +41,7 @@ interface Match {
   games: Game[]
   homeTeam: Team
   awayTeam: Team
-  tournamentTable: TournamentTable
+  tournamentTable?: TournamentTable
 }
 
 interface MatchesResponse {
@@ -141,6 +145,265 @@ const MatchSchedules = () => {
     }
   }
 
+  const PlayerImages = ({ team }: { team: Team }) => {
+    return (
+      <div className="flex -space-x-1">
+        {team.member1Image && (
+          <img 
+            src={team.member1Image} 
+            alt="Player 1" 
+            className="w-8 h-8 rounded-full border-2 border-white object-cover shadow-sm bg-gray-100"
+            onError={(e) => { 
+              const target = e.target as HTMLImageElement
+              target.src = '/api/placeholder/32/32'
+            }}
+          />
+        )}
+        {team.member2Image && (
+          <img 
+            src={team.member2Image} 
+            alt="Player 2" 
+            className="w-8 h-8 rounded-full border-2 border-white object-cover shadow-sm bg-gray-100"
+            onError={(e) => { 
+              const target = e.target as HTMLImageElement
+              target.src = '/api/placeholder/32/32'
+            }}
+          />
+        )}
+        {(!team.member1Image && !team.member2Image) && (
+          <div className="w-8 h-8 rounded-full border-2 border-white bg-gray-200 flex items-center justify-center">
+            <Users className="w-4 h-4 text-gray-600" />
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  const getMatchTypeInfo = (matchType: string, round?: string) => {
+    if (matchType === 'KNOCKOUT') {
+      const roundLabels = {
+        'QUARTER_FINAL': 'Quarter-Final',
+        'SEMI_FINAL': 'Semi-Final',
+        'FINAL': 'Final'
+      }
+      return {
+        label: round ? roundLabels[round as keyof typeof roundLabels] : 'Knockout',
+        icon: round === 'FINAL' ? Crown : Target,
+        color: 'text-purple-600',
+        bgColor: 'bg-purple-50',
+        borderColor: 'border-purple-200'
+      }
+    }
+    return {
+      label: 'Group Stage',
+      icon: Trophy,
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50',
+      borderColor: 'border-blue-200'
+    }
+  }
+
+  // Group matches by match type first, then by date
+  const groupMatchesByTypeAndDate = (matches: Match[]) => {
+    const grouped = {
+      GROUP_STAGE: {} as Record<string, Match[]>,
+      KNOCKOUT: {} as Record<string, Match[]>
+    }
+
+    matches.forEach(match => {
+      const dateKey = match.scheduledAt.split('T')[0]
+      if (!grouped[match.matchType][dateKey]) {
+        grouped[match.matchType][dateKey] = []
+      }
+      grouped[match.matchType][dateKey].push(match)
+    })
+
+    return grouped
+  }
+
+  const MatchCard = ({ match }: { match: Match }) => {
+    const result = formatMatchResult(match)
+    const matchTypeInfo = getMatchTypeInfo(match.matchType, match.round)
+    const isCompleted = match.status === 'COMPLETED'
+    const homeWinner = isCompleted && match.homeGamesWon > match.awayGamesWon
+    const awayWinner = isCompleted && match.awayGamesWon > match.homeGamesWon
+
+    return (
+      <div className="p-4 sm:p-6 hover:bg-gray-50 transition-colors">
+        {/* Match Info Header */}
+        <div className="flex items-center gap-4 mb-4">
+          <div className="flex items-center gap-2 text-sm text-gray-500">
+            <Clock className="w-4 h-4" />
+            {formatTime(match.scheduledAt)}
+          </div>
+          {match.tournamentTable && (
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <MapPin className="w-4 h-4" />
+              {match.tournamentTable.name}
+            </div>
+          )}
+          {match.matchType === 'KNOCKOUT' && match.round && (
+            <div className={`flex items-center gap-1 text-sm px-2 py-1 rounded-full ${matchTypeInfo.bgColor} ${matchTypeInfo.color} border ${matchTypeInfo.borderColor}`}>
+              <matchTypeInfo.icon className="w-3 h-3" />
+              {matchTypeInfo.label}
+            </div>
+          )}
+          {getStatusBadge(match.status)}
+          <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+            {match.format}
+          </div>
+        </div>
+
+        {/* Teams and Results */}
+        <div className="space-y-4">
+          {/* Mobile Layout */}
+          <div className="md:hidden">
+            {/* Home Team */}
+            <div className={`flex items-center justify-between p-4 rounded-lg border-2 transition-all ${
+              homeWinner 
+                ? 'bg-green-50 border-green-200 shadow-sm' 
+                : 'bg-gray-50 border-gray-200'
+            }`}>
+              <div className="flex items-center gap-3">
+                <PlayerImages team={match.homeTeam} />
+                <div>
+                  <div className={`font-semibold ${homeWinner ? 'text-green-800' : 'text-gray-900'}`}>
+                    {match.homeTeam.name}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {match.homeTeam.wins}W - {match.homeTeam.losses}L
+                  </div>
+                </div>
+              </div>
+              {isCompleted && (
+                <div className="text-right">
+                  <div className={`text-3xl font-bold ${homeWinner ? 'text-green-600' : 'text-gray-400'}`}>
+                    {result.homeDisplay}
+                  </div>
+                  <div className="text-xs text-gray-500">games won</div>
+                </div>
+              )}
+            </div>
+
+            {/* VS/Result Status */}
+            <div className="flex flex-col items-center justify-center py-3">
+              {isCompleted ? (
+                <div className="text-center">
+                  <div className="text-lg font-bold text-gray-600 mb-1">FINAL</div>
+                  {result.gameDetails && (
+                    <div className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                      Game Scores: {result.gameDetails}
+                    </div>
+                  )}
+                </div>
+              ) : match.status === 'IN_PROGRESS' ? (
+                <div className="text-yellow-600 font-bold text-lg animate-pulse">LIVE</div>
+              ) : (
+                <div className="text-gray-500 font-medium text-lg">VS</div>
+              )}
+            </div>
+
+            {/* Away Team */}
+            <div className={`flex items-center justify-between p-4 rounded-lg border-2 transition-all ${
+              awayWinner 
+                ? 'bg-green-50 border-green-200 shadow-sm' 
+                : 'bg-gray-50 border-gray-200'
+            }`}>
+              <div className="flex items-center gap-3">
+                <PlayerImages team={match.awayTeam} />
+                <div>
+                  <div className={`font-semibold ${awayWinner ? 'text-green-800' : 'text-gray-900'}`}>
+                    {match.awayTeam.name}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {match.awayTeam.wins}W - {match.awayTeam.losses}L
+                  </div>
+                </div>
+              </div>
+              {isCompleted && (
+                <div className="text-right">
+                  <div className={`text-3xl font-bold ${awayWinner ? 'text-green-600' : 'text-gray-400'}`}>
+                    {result.awayDisplay}
+                  </div>
+                  <div className="text-xs text-gray-500">games won</div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Desktop Layout */}
+          <div className="hidden md:grid md:grid-cols-5 gap-6 items-center">
+            {/* Home Team */}
+            <div className={`flex items-center gap-3 p-3 rounded-lg transition-all ${
+              homeWinner ? 'bg-green-50' : 'bg-gray-50'
+            }`}>
+              <PlayerImages team={match.homeTeam} />
+              <div>
+                <div className={`font-semibold ${homeWinner ? 'text-green-800' : 'text-gray-900'}`}>
+                  {match.homeTeam.name}
+                </div>
+                <div className="text-xs text-gray-500">
+                  {match.homeTeam.wins}W - {match.homeTeam.losses}L
+                </div>
+              </div>
+            </div>
+
+            {/* Home Score */}
+            <div className="text-center">
+              {isCompleted && (
+                <div className={`text-4xl font-bold ${homeWinner ? 'text-green-600' : 'text-gray-400'}`}>
+                  {result.homeDisplay}
+                </div>
+              )}
+            </div>
+
+            {/* VS/Status */}
+            <div className="text-center">
+              {isCompleted ? (
+                <div>
+                  <div className="text-lg font-bold text-gray-600 mb-2">FINAL</div>
+                  {result.gameDetails && (
+                    <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                      {result.gameDetails}
+                    </div>
+                  )}
+                </div>
+              ) : match.status === 'IN_PROGRESS' ? (
+                <div className="text-yellow-600 font-bold text-lg animate-pulse">LIVE</div>
+              ) : (
+                <div className="text-gray-500 font-medium text-lg">VS</div>
+              )}
+            </div>
+
+            {/* Away Score */}
+            <div className="text-center">
+              {isCompleted && (
+                <div className={`text-4xl font-bold ${awayWinner ? 'text-green-600' : 'text-gray-400'}`}>
+                  {result.awayDisplay}
+                </div>
+              )}
+            </div>
+
+            {/* Away Team */}
+            <div className={`flex items-center gap-3 justify-end p-3 rounded-lg transition-all ${
+              awayWinner ? 'bg-green-50' : 'bg-gray-50'
+            }`}>
+              <div className="text-right">
+                <div className={`font-semibold ${awayWinner ? 'text-green-800' : 'text-gray-900'}`}>
+                  {match.awayTeam.name}
+                </div>
+                <div className="text-xs text-gray-500">
+                  {match.awayTeam.wins}W - {match.awayTeam.losses}L
+                </div>
+              </div>
+              <PlayerImages team={match.awayTeam} />
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -209,203 +472,88 @@ const MatchSchedules = () => {
         </div>
       </div>
 
-      {/* Grouped Matches */}
-      {Object.entries(matchesData.groupedMatches).length === 0 ? (
+      {/* Matches by Type */}
+      {matchesData.matches.length === 0 ? (
         <div className="text-center py-12 text-gray-500">
           <Calendar className="w-12 h-12 mx-auto mb-4 text-gray-300" />
           <p>No matches found for the selected filters</p>
         </div>
       ) : (
-        Object.entries(matchesData.groupedMatches)
-          .sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())
-          .map(([date, matches]) => (
-            <div key={date} className="bg-white rounded-lg shadow-sm border overflow-hidden">
-              {/* Date Header */}
-              <div className="bg-gray-50 px-6 py-3 border-b">
-                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <Calendar className="w-5 h-5" />
-                  {formatDate(date)}
-                </h3>
-              </div>
-              
-              {/* Matches for this date */}
-              <div className="divide-y divide-gray-100">
-                {matches
-                  .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime())
-                  .map((match) => (
-                    <div key={match.id} className="p-4 sm:p-6 hover:bg-gray-50 transition-colors">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          {/* Match Info */}
-                          <div className="flex items-center gap-4 mb-3">
-                            <div className="flex items-center gap-2 text-sm text-gray-500">
-                              <Clock className="w-4 h-4" />
-                              {formatTime(match.scheduledAt)}
-                            </div>
-                            <div className="flex items-center gap-2 text-sm text-gray-500">
-                              <MapPin className="w-4 h-4" />
-                              {match.tournamentTable.name}
-                            </div>
-                            {getStatusBadge(match.status)}
-                          </div>
-                          
-                          {/* Teams and Score */}
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-                            {/* Mobile-optimized layout */}
-                            <div className="md:hidden col-span-1">
-                              <div className="space-y-3">
-                                {/* Home Team - Mobile */}
-                                <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                                  <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                      <Users className="w-4 h-4 text-blue-600" />
-                                    </div>
-                                    <div>
-                                      <div className="font-medium text-gray-900">{match.homeTeam.name}</div>
-                                      <div className="text-xs text-gray-500">
-                                        {match.homeTeam.wins}W - {match.homeTeam.losses}L
-                                      </div>
-                                    </div>
-                                  </div>
-                                  {match.status === 'COMPLETED' && (
-                                    <div className="text-right">
-                                      <div className={`text-xl font-bold ${
-                                        match.homeGamesWon > match.awayGamesWon 
-                                          ? 'text-green-600' 
-                                          : 'text-gray-400'
-                                      }`}>
-                                        {formatMatchResult(match).homeDisplay}
-                                      </div>
-                                      <div className="text-xs text-gray-500">games</div>
-                                    </div>
-                                  )}
-                                </div>
-                                
-                                {/* VS Status - Mobile */}
-                                <div className="flex flex-col items-center justify-center py-2">
-                                  {match.status === 'COMPLETED' ? (
-                                    <div>
-                                      <div className="text-gray-400 font-medium text-center">FINAL</div>
-                                      {formatMatchResult(match).gameDetails && (
-                                        <div className="text-xs text-gray-500 mt-1 text-center">
-                                          ({formatMatchResult(match).gameDetails})
-                                        </div>
-                                      )}
-                                    </div>
-                                  ) : match.status === 'IN_PROGRESS' ? (
-                                    <div className="text-yellow-600 font-medium animate-pulse">LIVE</div>
-                                  ) : (
-                                    <div className="text-gray-400 font-medium">VS</div>
-                                  )}
-                                </div>
-                                
-                                {/* Away Team - Mobile */}
-                                <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
-                                  <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-                                      <Users className="w-4 h-4 text-red-600" />
-                                    </div>
-                                    <div>
-                                      <div className="font-medium text-gray-900">{match.awayTeam.name}</div>
-                                      <div className="text-xs text-gray-500">
-                                        {match.awayTeam.wins}W - {match.awayTeam.losses}L
-                                      </div>
-                                    </div>
-                                  </div>
-                                  {match.status === 'COMPLETED' && (
-                                    <div className="text-right">
-                                      <div className={`text-xl font-bold ${
-                                        match.awayGamesWon > match.homeGamesWon 
-                                          ? 'text-green-600' 
-                                          : 'text-gray-400'
-                                      }`}>
-                                        {formatMatchResult(match).awayDisplay}
-                                      </div>
-                                      <div className="text-xs text-gray-500">games</div>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                            {/* Home Team - Desktop */}
-                            <div className="hidden md:flex items-center justify-between md:justify-start">
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                  <Users className="w-4 h-4 text-blue-600" />
-                                </div>
-                                <div>
-                                  <div className="font-medium text-gray-900">{match.homeTeam.name}</div>
-                                  <div className="text-xs text-gray-500">
-                                    {match.homeTeam.wins}W - {match.homeTeam.losses}L
-                                  </div>
-                                </div>
-                              </div>
-                              {match.status === 'COMPLETED' && (
-                                <div className="text-right mr-4">
-                                  <div className={`text-2xl font-bold ${
-                                    match.homeGamesWon > match.awayGamesWon 
-                                      ? 'text-green-600' 
-                                      : 'text-gray-400'
-                                  }`}>
-                                    {formatMatchResult(match).homeDisplay}
-                                  </div>
-                                  <div className="text-xs text-gray-500">games</div>
-                                </div>
-                              )}
-                            </div>
-                            
-                            {/* VS or Status - Desktop */}
-                            <div className="hidden md:flex flex-col items-center justify-center">
-                              {match.status === 'COMPLETED' ? (
-                                <div>
-                                  <div className="text-gray-400 font-medium text-center">FINAL</div>
-                                  {formatMatchResult(match).gameDetails && (
-                                    <div className="text-xs text-gray-500 mt-1 text-center">
-                                      ({formatMatchResult(match).gameDetails})
-                                    </div>
-                                  )}
-                                </div>
-                              ) : match.status === 'IN_PROGRESS' ? (
-                                <div className="text-yellow-600 font-medium animate-pulse">LIVE</div>
-                              ) : (
-                                <div className="text-gray-400 font-medium">VS</div>
-                              )}
-                            </div>
-                            
-                            {/* Away Team - Desktop */}
-                            <div className="hidden md:flex items-center justify-between md:justify-end">
-                              {match.status === 'COMPLETED' && (
-                                <div className="text-left ml-4">
-                                  <div className={`text-2xl font-bold ${
-                                    match.awayGamesWon > match.homeGamesWon 
-                                      ? 'text-green-600' 
-                                      : 'text-gray-400'
-                                  }`}>
-                                    {formatMatchResult(match).awayDisplay}
-                                  </div>
-                                  <div className="text-xs text-gray-500">games</div>
-                                </div>
-                              )}
-                              <div className="flex items-center gap-3">
-                                <div className="text-right md:text-left">
-                                  <div className="font-medium text-gray-900">{match.awayTeam.name}</div>
-                                  <div className="text-xs text-gray-500">
-                                    {match.awayTeam.wins}W - {match.awayTeam.losses}L
-                                  </div>
-                                </div>
-                                <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-                                  <Users className="w-4 h-4 text-red-600" />
-                                </div>
-                              </div>
-                            </div>
-                          </div>
+        (() => {
+          const groupedByType = groupMatchesByTypeAndDate(matchesData.matches)
+          
+          return (
+            <div className="space-y-8">
+              {/* Group Stage Matches */}
+              {Object.keys(groupedByType.GROUP_STAGE).length > 0 && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 pb-3 border-b-2 border-blue-200">
+                    <Trophy className="w-6 h-6 text-blue-600" />
+                    <h2 className="text-2xl font-bold text-blue-900">Group Stage</h2>
+                    <div className="text-sm text-blue-600 bg-blue-100 px-3 py-1 rounded-full">
+                      Round Robin
+                    </div>
+                  </div>
+                  
+                  {Object.entries(groupedByType.GROUP_STAGE)
+                    .sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())
+                    .map(([date, matches]) => (
+                      <div key={`group-${date}`} className="bg-white rounded-lg shadow-sm border border-blue-200 overflow-hidden">
+                        <div className="bg-blue-50 px-6 py-3 border-b border-blue-200">
+                          <h3 className="text-lg font-semibold text-blue-900 flex items-center gap-2">
+                            <Calendar className="w-5 h-5" />
+                            {formatDate(date)}
+                          </h3>
+                        </div>
+                        
+                        <div className="divide-y divide-blue-100">
+                          {matches
+                            .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime())
+                            .map((match) => (
+                              <MatchCard key={match.id} match={match} />
+                            ))}
                         </div>
                       </div>
+                    ))}
+                </div>
+              )}
+
+              {/* Knockout Stage Matches */}
+              {Object.keys(groupedByType.KNOCKOUT).length > 0 && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 pb-3 border-b-2 border-purple-200">
+                    <Crown className="w-6 h-6 text-purple-600" />
+                    <h2 className="text-2xl font-bold text-purple-900">Knockout Stage</h2>
+                    <div className="text-sm text-purple-600 bg-purple-100 px-3 py-1 rounded-full">
+                      Single Elimination
                     </div>
-                  ))}
-              </div>
+                  </div>
+                  
+                  {Object.entries(groupedByType.KNOCKOUT)
+                    .sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())
+                    .map(([date, matches]) => (
+                      <div key={`knockout-${date}`} className="bg-white rounded-lg shadow-sm border border-purple-200 overflow-hidden">
+                        <div className="bg-purple-50 px-6 py-3 border-b border-purple-200">
+                          <h3 className="text-lg font-semibold text-purple-900 flex items-center gap-2">
+                            <Calendar className="w-5 h-5" />
+                            {formatDate(date)}
+                          </h3>
+                        </div>
+                        
+                        <div className="divide-y divide-purple-100">
+                          {matches
+                            .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime())
+                            .map((match) => (
+                              <MatchCard key={match.id} match={match} />
+                            ))}
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
             </div>
-          ))
+          )
+        })()
       )}
     </div>
   )
