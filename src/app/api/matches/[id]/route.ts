@@ -3,11 +3,12 @@ import { prisma } from '@/lib/prisma'
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { format, status, games, homeScore, awayScore, scheduledAt } = await request.json()
-    const matchId = params.id
+    const matchId = id
 
     // Get the current match to check previous state
     const currentMatch = await prisma.match.findUnique({
@@ -26,7 +27,16 @@ export async function PATCH(
       )
     }
 
-    let updateData: any = {}
+    let updateData: {
+      homeScore?: number;
+      awayScore?: number;
+      status?: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+      completedAt?: Date | null;
+      scheduledAt?: Date;
+      format?: 'BO3' | 'BO5';
+      homeGamesWon?: number;
+      awayGamesWon?: number;
+    } = {}
     
     // Handle legacy format (simple homeScore/awayScore)
     if (homeScore !== undefined && awayScore !== undefined && !games) {
