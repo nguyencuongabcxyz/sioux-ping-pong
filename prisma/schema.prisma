@@ -1,0 +1,171 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Admin user model for authentication
+model Admin {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("admins")
+}
+
+// Tournament progression tracking
+model TournamentStage {
+  id            String          @id @default(cuid())
+  currentStage  TournamentPhase @default(GROUP_STAGE)
+  groupStageCompleted Boolean   @default(false)
+  knockoutGenerated   Boolean   @default(false)
+  
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@map("tournament_stage")
+}
+
+// Tournament table (3 tables in total)
+model TournamentTable {
+  id          String @id @default(cuid())
+  name        String @unique // "Table 1", "Table 2", "Table 3"
+  description String?
+  teams       Team[]
+  matches     Match[]
+
+  @@map("tournament_tables")
+}
+
+// Team model (4 teams per table)
+model Team {
+  id               String          @id @default(cuid())
+  name             String
+  member1Image     String?         // Path to first member's image
+  member2Image     String?         // Path to second member's image
+  tournamentTable  TournamentTable @relation(fields: [tournamentTableId], references: [id])
+  tournamentTableId String
+  
+  // Stats for ranking
+  matchesPlayed    Int @default(0)
+  wins             Int @default(0)
+  losses           Int @default(0)
+  points           Int @default(0) // Total points scored
+  pointsAgainst    Int @default(0) // Total points conceded
+  
+  // Matches where this team is player 1 or player 2
+  homeMatches      Match[] @relation("HomeTeam")
+  awayMatches      Match[] @relation("AwayTeam")
+  
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([name, tournamentTableId])
+  @@map("teams")
+}
+
+// Match model
+model Match {
+  id                String          @id @default(cuid())
+  tournamentTable   TournamentTable? @relation(fields: [tournamentTableId], references: [id])
+  tournamentTableId String?
+  
+  homeTeam          Team            @relation("HomeTeam", fields: [homeTeamId], references: [id])
+  homeTeamId        String
+  awayTeam          Team            @relation("AwayTeam", fields: [awayTeamId], references: [id])
+  awayTeamId        String
+  
+  scheduledAt       DateTime
+  status            MatchStatus     @default(SCHEDULED)
+  format            MatchFormat     @default(BO3) // Best of 3 or Best of 5
+  matchType         MatchType       @default(GROUP_STAGE)
+  
+  // Knockout specific fields
+  round             KnockoutRound?
+  roundOrder        Int?            // Order within the round (1st QF, 2nd QF, etc.)
+  
+  // Match result (games won)
+  homeGamesWon      Int             @default(0)
+  awayGamesWon      Int             @default(0)
+  
+  // Legacy fields for backward compatibility
+  homeScore         Int?
+  awayScore         Int?
+  completedAt       DateTime?
+  
+  // Individual games
+  games             Game[]
+  
+  // Advancing team for knockout matches
+  winnerAdvancesToMatch Match?       @relation("AdvancingMatch", fields: [winnerAdvancesToMatchId], references: [id])
+  winnerAdvancesToMatchId String?
+  advancingFromMatches  Match[]      @relation("AdvancingMatch")
+  
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@map("matches")
+}
+
+// Individual game within a match
+model Game {
+  id              String   @id @default(cuid())
+  match           Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  matchId         String
+  
+  gameNumber      Int      // 1, 2, 3, 4, 5
+  homeScore       Int      @default(0)
+  awayScore       Int      @default(0)
+  status          GameStatus @default(SCHEDULED)
+  completedAt     DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([matchId, gameNumber])
+  @@map("games")
+}
+
+enum MatchStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum MatchFormat {
+  BO3  // Best of 3
+  BO5  // Best of 5
+}
+
+enum MatchType {
+  GROUP_STAGE
+  KNOCKOUT
+}
+
+enum KnockoutRound {
+  QUARTER_FINAL
+  SEMI_FINAL
+  FINAL
+}
+
+enum TournamentPhase {
+  GROUP_STAGE
+  KNOCKOUT_STAGE
+  COMPLETED
+}
+
+enum GameStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+}
