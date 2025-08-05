@@ -4,15 +4,17 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build",
+    "build": "npx prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
     "db:seed": "tsx prisma/seed.ts",
     "db:seed:prod": "node seed-production.js",
+    "db:migrate:prod": "node migrate-production.js",
     "setup": "node setup.js",
     "db:studio": "npx prisma studio",
     "db:reset": "npx prisma migrate reset",
-    "postinstall": "npx prisma generate && npx prisma migrate deploy"
+    "db:generate": "npx prisma generate",
+    "db:migrate": "npx prisma migrate deploy"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
