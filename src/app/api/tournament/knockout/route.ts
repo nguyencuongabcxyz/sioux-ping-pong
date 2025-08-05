@@ -36,17 +36,28 @@ export async function POST(request: Request) {
     }
 
     // Get qualified teams
-    const qualifiedTeams = await getQualifiedTeams()
+    const qualificationResult = await getQualifiedTeams()
 
-    if (qualifiedTeams.length !== 8) {
+    // If tie-breaking is needed, return the teams for admin decision
+    if (qualificationResult.needsTieBreak) {
+      return NextResponse.json({
+        needsTieBreak: true,
+        message: 'Tie-breaking required for third-place teams',
+        qualifiedTeams: qualificationResult.qualifiedTeams.map(team => ({ id: team.id, name: team.name })),
+        thirdPlaceTeams: qualificationResult.thirdPlaceTeams.map(team => ({ id: team.id, name: team.name })),
+        tiedTeams: qualificationResult.tiedTeams.map(team => ({ id: team.id, name: team.name }))
+      })
+    }
+
+    if (qualificationResult.qualifiedTeams.length !== 8) {
       return NextResponse.json(
-        { error: `Expected 8 qualified teams, found ${qualifiedTeams.length}` },
+        { error: `Expected 8 qualified teams, found ${qualificationResult.qualifiedTeams.length}` },
         { status: 400 }
       )
     }
 
     // Generate knockout bracket
-    await generateKnockoutBracket(qualifiedTeams)
+    await generateKnockoutBracket(qualificationResult.qualifiedTeams)
 
     // Update tournament stage
     await prisma.tournamentStage.update({
@@ -60,7 +71,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ 
       message: 'Knockout stage generated successfully',
-      qualifiedTeams: qualifiedTeams.map(team => ({ id: team.id, name: team.name }))
+      qualifiedTeams: qualificationResult.qualifiedTeams.map(team => ({ id: team.id, name: team.name }))
     })
 
   } catch (error) {
@@ -100,26 +111,58 @@ async function getQualifiedTeams() {
     }
   }
 
-  // Sort 3rd place teams and take best 2
+  // Sort 3rd place teams according to the rules
   thirdPlaceTeams.sort((a, b) => {
-    // Tournament Points (wins)
+    // 1. Points earned in their group (wins)
     if (a.wins !== b.wins) return b.wins - a.wins
-    // Game Difference
+    // 2. Game difference (wins - losses)
     const aGameDiff = a.wins - a.losses
     const bGameDiff = b.wins - b.losses
     if (aGameDiff !== bGameDiff) return bGameDiff - aGameDiff
-    // Point Difference
+    // 3. Point difference (points scored - points conceded)
     const aPointDiff = a.points - a.pointsAgainst
     const bPointDiff = b.points - b.pointsAgainst
     if (aPointDiff !== bPointDiff) return bPointDiff - aPointDiff
-    // Total points scored
-    return b.points - a.points
+    // 4. Total points scored
+    if (a.points !== b.points) return b.points - a.points
+    // 5. If still tied, we need to draw lots (handled by frontend)
+    return 0
   })
+
+  // Check for ties in third place teams
+  const tiedTeams = []
+  if (thirdPlaceTeams.length >= 2) {
+    const firstTeam = thirdPlaceTeams[0]
+    const secondTeam = thirdPlaceTeams[1]
+    
+    // Check if first and second are tied
+    if (firstTeam.wins === secondTeam.wins &&
+        (firstTeam.wins - firstTeam.losses) === (secondTeam.wins - secondTeam.losses) &&
+        (firstTeam.points - firstTeam.pointsAgainst) === (secondTeam.points - secondTeam.pointsAgainst) &&
+        firstTeam.points === secondTeam.points) {
+      tiedTeams.push(firstTeam, secondTeam)
+    }
+  }
+
+  // If there are ties, we need admin decision
+  if (tiedTeams.length > 0) {
+    return {
+      qualifiedTeams,
+      thirdPlaceTeams,
+      tiedTeams,
+      needsTieBreak: true
+    }
+  }
 
   // Add best 2 third place teams
   qualifiedTeams.push(...thirdPlaceTeams.slice(0, 2))
 
-  return qualifiedTeams
+  return {
+    qualifiedTeams,
+    thirdPlaceTeams,
+    tiedTeams: [],
+    needsTieBreak: false
+  }
 }
 
 async function generateKnockoutBracket(teams: any[]) {

@@ -3,6 +3,23 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET() {
   try {
+    // Get tournament stage to check if knockout is generated
+    const tournamentStage = await prisma.tournamentStage.findFirst()
+    const knockoutGenerated = tournamentStage?.knockoutGenerated || false
+
+    // Get all knockout matches to determine which teams advanced
+    let advancedTeamIds: string[] = []
+    if (knockoutGenerated) {
+      const knockoutMatches = await prisma.match.findMany({
+        where: { matchType: 'KNOCKOUT' },
+        select: { homeTeamId: true, awayTeamId: true }
+      })
+      advancedTeamIds = [...new Set([
+        ...knockoutMatches.map(m => m.homeTeamId),
+        ...knockoutMatches.map(m => m.awayTeamId)
+      ])]
+    }
+
     const tables = await prisma.tournamentTable.findMany({
       include: {
         teams: true,
@@ -26,6 +43,8 @@ export async function GET() {
         winPercentage: team.matchesPlayed > 0 ? (team.wins / team.matchesPlayed) * 100 : 0,
         averagePointsScored: team.matchesPlayed > 0 ? team.points / team.matchesPlayed : 0,
         averagePointsConceded: team.matchesPlayed > 0 ? team.pointsAgainst / team.matchesPlayed : 0,
+        // Check if team advanced to knockout stage
+        advancedToKnockout: advancedTeamIds.includes(team.id),
       }))
 
       // Apply tournament ranking rules:
@@ -35,18 +54,22 @@ export async function GET() {
       // 4. Points scored - higher points first (tiebreaker)
       const sortedTeams = teamsWithStats.sort((a, b) => {
         // 1. Tournament Points (most wins)
-        if (a.tournamentPoints !== b.tournamentPoints) {
-          return b.tournamentPoints - a.tournamentPoints
+        if (a.wins !== b.wins) {
+          return b.wins - a.wins
         }
         
         // 2. Game Difference (wins - losses)
-        if (a.gameDifference !== b.gameDifference) {
-          return b.gameDifference - a.gameDifference
+        const aGameDiff = a.wins - a.losses
+        const bGameDiff = b.wins - b.losses
+        if (aGameDiff !== bGameDiff) {
+          return bGameDiff - aGameDiff
         }
         
         // 3. Point Difference (points scored - points conceded)
-        if (a.pointDifferential !== b.pointDifferential) {
-          return b.pointDifferential - a.pointDifferential
+        const aPointDiff = a.points - a.pointsAgainst
+        const bPointDiff = b.points - b.pointsAgainst
+        if (aPointDiff !== bPointDiff) {
+          return bPointDiff - aPointDiff
         }
         
         // 4. Total points scored (tiebreaker)
@@ -59,7 +82,11 @@ export async function GET() {
       }
     })
 
-    return NextResponse.json(tablesWithStats)
+    return NextResponse.json({
+      tables: tablesWithStats,
+      knockoutGenerated,
+      advancedTeamIds
+    })
   } catch (error) {
     console.error('Error fetching standings:', error)
     return NextResponse.json(

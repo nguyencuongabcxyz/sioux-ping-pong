@@ -13,7 +13,8 @@ import {
   X,
   Target,
   Crown,
-  RotateCcw
+  RotateCcw,
+  Zap
 } from 'lucide-react'
 
 interface Game {
@@ -53,6 +54,9 @@ const AdminDashboard = () => {
     scheduledAt: '',
     games: [] as Array<{ gameNumber: number; homeScore: string; awayScore: string; status: Game['status'] }>
   })
+  const [showTieBreakModal, setShowTieBreakModal] = useState(false)
+  const [tieBreakData, setTieBreakData] = useState<any>(null)
+  const [selectedTieBreakTeams, setSelectedTieBreakTeams] = useState<string[]>([])
 
   useEffect(() => {
     fetchMatches()
@@ -88,17 +92,52 @@ const AdminDashboard = () => {
   const generateKnockout = async () => {
     try {
       const response = await fetch('/api/tournament/knockout', { method: 'POST' })
+      const data = await response.json()
+      
       if (response.ok) {
         await fetchTournamentStage()
         await fetchMatches() // Refresh to show new knockout matches
         alert('Knockout bracket generated successfully!')
+      } else if (data.needsTieBreak) {
+        // Show tie-break modal
+        setTieBreakData(data)
+        setShowTieBreakModal(true)
+      } else {
+        alert(`Error: ${data.error}`)
+      }
+    } catch (error) {
+      console.error('Error generating knockout:', error)
+      alert('Failed to generate knockout bracket')
+    }
+  }
+
+  const handleTieBreakSelection = async () => {
+    if (selectedTieBreakTeams.length !== 2) {
+      alert('Please select exactly 2 teams for tie-breaking')
+      return
+    }
+
+    try {
+      const response = await fetch('/api/tournament/knockout/tiebreak', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ selectedTeamIds: selectedTieBreakTeams })
+      })
+
+      if (response.ok) {
+        await fetchTournamentStage()
+        await fetchMatches()
+        setShowTieBreakModal(false)
+        setTieBreakData(null)
+        setSelectedTieBreakTeams([])
+        alert('Knockout stage generated successfully with tie-break resolution!')
       } else {
         const errorData = await response.json()
         alert(`Error: ${errorData.error}`)
       }
     } catch (error) {
-      console.error('Error generating knockout:', error)
-      alert('Failed to generate knockout bracket')
+      console.error('Error resolving tie-break:', error)
+      alert('Failed to resolve tie-break')
     }
   }
 
@@ -120,6 +159,27 @@ const AdminDashboard = () => {
     } catch (error) {
       console.error('Error resetting results:', error)
       alert('Failed to reset match results')
+    }
+  }
+
+  const fillGroupStageResults = async () => {
+    if (!confirm('This will randomly fill all group stage match results with realistic BO3 table tennis scores.\n\nEach game is played to 11 points with a 2-point lead needed to win.\n\nThis action cannot be undone.')) {
+      return
+    }
+
+    try {
+      const response = await fetch('/api/tournament/fill-group-results', { method: 'POST' })
+      if (response.ok) {
+        await fetchTournamentStage()
+        await fetchMatches() // Refresh to show filled results
+        alert('Group stage results have been filled successfully!')
+      } else {
+        const errorData = await response.json()
+        alert(`Error: ${errorData.error}`)
+      }
+    } catch (error) {
+      console.error('Error filling group results:', error)
+      alert('Failed to fill group stage results')
     }
   }
 
@@ -303,6 +363,13 @@ const AdminDashboard = () => {
                   Generate Knockout
                 </button>
               )}
+              <button
+                onClick={fillGroupStageResults}
+                className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+              >
+                <Zap className="w-4 h-4" />
+                Fill Group Results
+              </button>
               <button
                 onClick={resetAllResults}
                 className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
@@ -875,6 +942,80 @@ const AdminDashboard = () => {
             <Calendar className="w-12 h-12 mx-auto mb-4 text-gray-300" />
             <h3 className="text-lg font-medium text-gray-700 mb-2">No Matches Found</h3>
             <p className="text-gray-500">No matches have been scheduled yet.</p>
+          </div>
+        )}
+
+        {/* Tie-Break Modal */}
+        {showTieBreakModal && tieBreakData && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+              <div className="flex items-center gap-3 mb-4">
+                <Trophy className="w-6 h-6 text-purple-600" />
+                <h3 className="text-lg font-semibold text-gray-900">Tie-Break Required</h3>
+              </div>
+              
+              <p className="text-gray-600 mb-4">
+                Two third-place teams are tied and need manual selection for quarter-final qualification.
+                Please select exactly 2 teams to advance:
+              </p>
+
+              <div className="space-y-3 mb-6">
+                {tieBreakData.tiedTeams.map((team: any) => (
+                  <label key={team.id} className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedTieBreakTeams.includes(team.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          if (selectedTieBreakTeams.length < 2) {
+                            setSelectedTieBreakTeams([...selectedTieBreakTeams, team.id])
+                          }
+                        } else {
+                          setSelectedTieBreakTeams(selectedTieBreakTeams.filter(id => id !== team.id))
+                        }
+                      }}
+                      className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                    />
+                    <div className="flex items-center gap-2">
+                      <div className="flex -space-x-1">
+                        {team.member1Image && (
+                          <img src={team.member1Image} alt="Player 1" className="w-6 h-6 rounded-full border border-white object-cover shadow-sm" />
+                        )}
+                        {team.member2Image && (
+                          <img src={team.member2Image} alt="Player 2" className="w-6 h-6 rounded-full border border-white object-cover shadow-sm" />
+                        )}
+                        {(!team.member1Image && !team.member2Image) && (
+                          <div className="w-6 h-6 rounded-full border border-white bg-gray-200 flex items-center justify-center">
+                            <Users className="w-3 h-3 text-gray-600" />
+                          </div>
+                        )}
+                      </div>
+                      <span className="font-medium">{team.name}</span>
+                    </div>
+                  </label>
+                ))}
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={handleTieBreakSelection}
+                  disabled={selectedTieBreakTeams.length !== 2}
+                  className="flex-1 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                >
+                  Generate Knockout ({selectedTieBreakTeams.length}/2 selected)
+                </button>
+                <button
+                  onClick={() => {
+                    setShowTieBreakModal(false)
+                    setTieBreakData(null)
+                    setSelectedTieBreakTeams([])
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
