@@ -94,7 +94,7 @@ async function getQualifiedTeams() {
 
   // Sort teams within each table using the same logic as standings
   const tablesWithSortedTeams = await Promise.all(tables.map(async table => {
-    // Get all completed matches for this table to calculate head-to-head results
+    // Get all completed matches for this table to calculate game differences
     const tableMatches = await prisma.match.findMany({
       where: {
         tournamentTableId: table.id,
@@ -108,17 +108,6 @@ async function getQualifiedTeams() {
         awayGamesWon: true
       }
     })
-
-    // Create head-to-head lookup map
-    const headToHeadMap = new Map<string, number>()
-    for (const match of tableMatches) {
-      const key = `${match.homeTeamId}-${match.awayTeamId}`
-      const reverseKey = `${match.awayTeamId}-${match.homeTeamId}`
-      
-      const homeWon = match.homeGamesWon > match.awayGamesWon
-      headToHeadMap.set(key, homeWon ? 1 : -1)
-      headToHeadMap.set(reverseKey, homeWon ? -1 : 1)
-    }
 
     // Calculate games won/lost for each team
     const teamGamesWon = new Map<string, number>()
@@ -148,7 +137,7 @@ async function getQualifiedTeams() {
         return b.wins - a.wins
       }
       
-      // 2. Game Difference (games won - games lost) - CORRECTED
+      // 2. Game Difference (individual games won - games lost)
       const aGamesWon = teamGamesWon.get(a.id) || 0
       const aGamesLost = teamGamesLost.get(a.id) || 0
       const bGamesWon = teamGamesWon.get(b.id) || 0
@@ -177,16 +166,17 @@ async function getQualifiedTeams() {
         name: t.name,
         wins: t.wins,
         losses: t.losses,
-        gameDiff: t.wins - t.losses,
+        gameDiff: (teamGamesWon.get(t.id) || 0) - (teamGamesLost.get(t.id) || 0),
         pointDiff: t.points - t.pointsAgainst,
         points: t.points
       })))
-      console.log('Knockout - Head-to-head map:', Object.fromEntries(headToHeadMap))
     }
 
     return {
       ...table,
-      teams: sortedTeams
+      teams: sortedTeams,
+      teamGamesWon,
+      teamGamesLost
     }
   }))
 
@@ -199,7 +189,12 @@ async function getQualifiedTeams() {
       // Top 2 teams qualify directly
       qualifiedTeams.push(table.teams[0], table.teams[1])
       // 3rd place team goes to wildcard pool
-      thirdPlaceTeams.push(table.teams[2])
+      thirdPlaceTeams.push({
+        ...table.teams[2],
+        tableId: table.id,
+        teamGamesWon: table.teamGamesWon,
+        teamGamesLost: table.teamGamesLost
+      })
     }
   }
 
@@ -207,16 +202,25 @@ async function getQualifiedTeams() {
   thirdPlaceTeams.sort((a, b) => {
     // 1. Points earned in their group (wins)
     if (a.wins !== b.wins) return b.wins - a.wins
-    // 2. Game difference (wins - losses)
-    const aGameDiff = a.wins - a.losses
-    const bGameDiff = b.wins - b.losses
+    
+    // 2. Game difference (individual games won - games lost)
+    const aGamesWon = a.teamGamesWon.get(a.id) || 0
+    const aGamesLost = a.teamGamesLost.get(a.id) || 0
+    const bGamesWon = b.teamGamesWon.get(b.id) || 0
+    const bGamesLost = b.teamGamesLost.get(b.id) || 0
+    
+    const aGameDiff = aGamesWon - aGamesLost
+    const bGameDiff = bGamesWon - bGamesLost
     if (aGameDiff !== bGameDiff) return bGameDiff - aGameDiff
+    
     // 3. Point difference (points scored - points conceded)
     const aPointDiff = a.points - a.pointsAgainst
     const bPointDiff = b.points - b.pointsAgainst
     if (aPointDiff !== bPointDiff) return bPointDiff - aPointDiff
+    
     // 4. Total points scored
     if (a.points !== b.points) return b.points - a.points
+    
     // 5. If still tied, we need to draw lots (handled by frontend)
     return 0
   })
@@ -227,9 +231,14 @@ async function getQualifiedTeams() {
     const firstTeam = thirdPlaceTeams[0]
     const secondTeam = thirdPlaceTeams[1]
     
-    // Check if first and second are tied
+    // Check if first and second are tied using the same criteria as sorting
+    const firstGamesWon = firstTeam.teamGamesWon.get(firstTeam.id) || 0
+    const firstGamesLost = firstTeam.teamGamesLost.get(firstTeam.id) || 0
+    const secondGamesWon = secondTeam.teamGamesWon.get(secondTeam.id) || 0
+    const secondGamesLost = secondTeam.teamGamesLost.get(secondTeam.id) || 0
+    
     if (firstTeam.wins === secondTeam.wins &&
-        (firstTeam.wins - firstTeam.losses) === (secondTeam.wins - secondTeam.losses) &&
+        (firstGamesWon - firstGamesLost) === (secondGamesWon - secondGamesLost) &&
         (firstTeam.points - firstTeam.pointsAgainst) === (secondTeam.points - secondTeam.pointsAgainst) &&
         firstTeam.points === secondTeam.points) {
       tiedTeams.push(firstTeam, secondTeam)
