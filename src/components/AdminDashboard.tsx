@@ -59,6 +59,8 @@ const AdminDashboard = () => {
     format: 'BO3' as Match['format'],
     status: 'SCHEDULED' as Match['status'],
     scheduledAt: '',
+    scheduledDate: '',
+    scheduledTime: '12:30',
     games: [] as Array<{ gameNumber: number; homeScore: string; awayScore: string; status: Game['status'] }>
   })
   const [showTieBreakModal, setShowTieBreakModal] = useState(false)
@@ -360,14 +362,17 @@ const AdminDashboard = () => {
       })
     }
     
-    // Format date for input field (YYYY-MM-DDTHH:MM)
+    // Format date and time for input fields
     const scheduledDate = new Date(match.scheduledAt)
-    const formattedDate = scheduledDate.toISOString().slice(0, 16)
+    const formattedDate = scheduledDate.toISOString().split('T')[0]
+    const formattedTime = extractTimeFromDateTime(match.scheduledAt)
     
     setEditForm({
       format: match.format,
       status: match.status,
-      scheduledAt: formattedDate,
+      scheduledAt: match.scheduledAt,
+      scheduledDate: formattedDate,
+      scheduledTime: formattedTime,
       games: initialGames
     })
   }
@@ -384,6 +389,9 @@ const AdminDashboard = () => {
           status: 'COMPLETED' as Game['status']
         }))
 
+      // Create the full datetime string from date and time
+      const fullDateTime = createDateTimeString(editForm.scheduledDate, editForm.scheduledTime)
+      
       const response = await fetch(`/api/matches/${matchId}`, {
         method: 'PATCH',
         headers: {
@@ -392,7 +400,7 @@ const AdminDashboard = () => {
         body: JSON.stringify({
           format: editForm.format,
           status: editForm.status,
-          scheduledAt: editForm.scheduledAt,
+          scheduledAt: fullDateTime,
           games: gamesData,
         }),
       })
@@ -415,6 +423,8 @@ const AdminDashboard = () => {
       format: 'BO3', 
       status: 'SCHEDULED', 
       scheduledAt: '',
+      scheduledDate: '',
+      scheduledTime: '12:30',
       games: [] 
     })
   }
@@ -476,6 +486,35 @@ const AdminDashboard = () => {
       bgColor: 'bg-blue-50',
       borderColor: 'border-blue-200'
     }
+  }
+
+  // Helper function to get available time slots
+  const getTimeSlots = () => {
+    return [
+      { value: '12:30', label: '12:30 PM' },
+      { value: '12:50', label: '12:50 PM' },
+      { value: '17:30', label: '5:30 PM' },
+      { value: '17:50', label: '5:50 PM' }
+    ]
+  }
+
+  // Helper function to format current date for datetime-local input
+  const getCurrentDateString = () => {
+    const today = new Date()
+    return today.toISOString().split('T')[0]
+  }
+
+  // Helper function to create datetime string from date and time
+  const createDateTimeString = (date: string, time: string) => {
+    return `${date}T${time}`
+  }
+
+  // Helper function to extract time from datetime string
+  const extractTimeFromDateTime = (dateTimeString: string) => {
+    const date = new Date(dateTimeString)
+    const hours = date.getHours().toString().padStart(2, '0')
+    const minutes = date.getMinutes().toString().padStart(2, '0')
+    return `${hours}:${minutes}`
   }
 
   // Filter matches based on selected filters
@@ -878,12 +917,25 @@ const AdminDashboard = () => {
                       </td>
                       <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {editingMatch === match.id ? (
-                          <input
-                            type="datetime-local"
-                            value={editForm.scheduledAt}
-                            onChange={(e) => setEditForm({ ...editForm, scheduledAt: e.target.value })}
-                            className="border border-gray-300 rounded px-2 py-1 text-xs"
-                          />
+                          <div className="flex gap-1">
+                            <input
+                              type="date"
+                              value={editForm.scheduledDate}
+                              onChange={(e) => setEditForm({ ...editForm, scheduledDate: e.target.value })}
+                              className="border border-gray-300 rounded px-2 py-1 text-xs w-24"
+                            />
+                            <select
+                              value={editForm.scheduledTime}
+                              onChange={(e) => setEditForm({ ...editForm, scheduledTime: e.target.value })}
+                              className="border border-gray-300 rounded px-2 py-1 text-xs w-20"
+                            >
+                              {getTimeSlots().map((slot) => (
+                                <option key={slot.value} value={slot.value}>
+                                  {slot.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
                         ) : (
                           formatDateTime(match.scheduledAt)
                         )}
@@ -1116,12 +1168,25 @@ const AdminDashboard = () => {
                         </td>
                         <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {editingMatch === match.id ? (
-                            <input
-                              type="datetime-local"
-                              value={editForm.scheduledAt}
-                              onChange={(e) => setEditForm({ ...editForm, scheduledAt: e.target.value })}
-                              className="border border-gray-300 rounded px-2 py-1 text-xs"
-                            />
+                            <div className="flex gap-1">
+                              <input
+                                type="date"
+                                value={editForm.scheduledDate}
+                                onChange={(e) => setEditForm({ ...editForm, scheduledDate: e.target.value })}
+                                className="border border-gray-300 rounded px-2 py-1 text-xs w-24"
+                              />
+                              <select
+                                value={editForm.scheduledTime}
+                                onChange={(e) => setEditForm({ ...editForm, scheduledTime: e.target.value })}
+                                className="border border-gray-300 rounded px-2 py-1 text-xs w-20"
+                              >
+                                {getTimeSlots().map((slot) => (
+                                  <option key={slot.value} value={slot.value}>
+                                    {slot.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
                           ) : (
                             formatDateTime(match.scheduledAt)
                           )}
