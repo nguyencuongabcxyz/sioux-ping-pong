@@ -123,7 +123,7 @@ const MatchSchedules = () => {
     return (
       <span 
         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.bg} ${config.text}`}
-        style={config.customBg ? { backgroundColor: config.customBg } : {}}
+        style={'customBg' in config ? { backgroundColor: config.customBg } : {}}
       >
         {config.label}
       </span>

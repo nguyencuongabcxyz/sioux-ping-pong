@@ -70,7 +70,7 @@ export default function RulesPage() {
               <h3 className="font-semibold text-gray-900 mb-2">Service Rules</h3>
               <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
                 <li>Service alternates every 2 points</li>
-                <li>Ball must bounce once on server's side, then opponent's side</li>
+                <li>Ball must bounce once on server&apos;s side, then opponent&apos;s side</li>
                 <li>Service must be diagonal (cross-court)</li>
               </ul>
             </div>
@@ -177,7 +177,7 @@ export default function RulesPage() {
                   Each quarterfinal match will be formed with <strong>teams from different tables</strong>.
                 </p>
                 <p>
-                  The 2 best third-placed teams will be treated as <strong>unseeded</strong> and randomly drawn to match against group winners or runners-up, ensuring they don't face teams from their own original table.
+                  The 2 best third-placed teams will be treated as <strong>unseeded</strong> and randomly drawn to match against group winners or runners-up, ensuring they don&apos;t face teams from their own original table.
                 </p>
               </div>
             </div>
@@ -214,7 +214,7 @@ export default function RulesPage() {
             <li>Disputes should be resolved through discussion or referee decision</li>
             <li>Unsportsmanlike conduct may result in warnings or disqualification</li>
             <li>Players are responsible for their own equipment</li>
-            <li>Tournament organizers' decisions are final</li>
+            <li>Tournament organizers&apos; decisions are final</li>
           </ul>
         </div>
 
