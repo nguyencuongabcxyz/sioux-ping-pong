@@ -121,8 +121,7 @@ const MatchSchedules = () => {
     return new Date(dateString).toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
-      hour12: true,
-      timeZone: 'UTC' // Force UTC interpretation to match how we stored it
+      hour12: true
     })
   }
 

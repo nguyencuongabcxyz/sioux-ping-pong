@@ -317,9 +317,11 @@ async function main() {
         teamsPlayedPerDay[dateKey].add(match.home.id)
         teamsPlayedPerDay[dateKey].add(match.away.id)
         
-        // Create the date treating the times as if they're in UTC
-        // This ensures consistent display across all environments
-        const matchDateTime = new Date(Date.UTC(2025, 7, scheduleDay.date, matchSchedule.time.hour, matchSchedule.time.minute, 0, 0))
+        // Create the date treating the times as local time, then convert to UTC for storage
+        // This matches the approach used in the admin interface
+        const matchDate = new Date(2025, 7, scheduleDay.date) // August 2025 (month is 0-indexed)
+        matchDate.setHours(matchSchedule.time.hour, matchSchedule.time.minute, 0, 0)
+        const matchDateTime = matchDate.toISOString() // Convert to UTC for storage
 
         await prisma.match.create({
           data: {
@@ -333,7 +335,7 @@ async function main() {
           },
         })
         
-        console.log(`Created match: ${match.home.name} vs ${match.away.name} at ${matchDateTime.toLocaleString()}`)
+        console.log(`Created match: ${match.home.name} vs ${match.away.name} at ${new Date(matchDateTime).toLocaleString()}`)
         
         // Move to next match for this table
         tableMatchIndex[table.id]++

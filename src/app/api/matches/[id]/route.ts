@@ -1,6 +1,13 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+// Helper function to parse scheduledAt date consistently
+function parseScheduledAt(scheduledAt: string): Date {
+  // The scheduledAt string is already in ISO format (UTC)
+  // Just create a Date object from it
+  return new Date(scheduledAt)
+}
+
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -45,7 +52,7 @@ export async function PATCH(
         awayScore,
         status,
         completedAt: status === 'COMPLETED' ? new Date() : null,
-        ...(scheduledAt && { scheduledAt: new Date(scheduledAt) }),
+        ...(scheduledAt && { scheduledAt: parseScheduledAt(scheduledAt) }),
       }
     }
     // Handle new table tennis format (games)
@@ -117,14 +124,14 @@ export async function PATCH(
         awayScore: totalAwayPoints,
         status: isMatchCompleted ? 'COMPLETED' : (status || currentMatch.status),
         completedAt: isMatchCompleted ? new Date() : null,
-        ...(scheduledAt && { scheduledAt: new Date(scheduledAt) }),
+        ...(scheduledAt && { scheduledAt: parseScheduledAt(scheduledAt) }),
       }
     }
     // Handle status-only updates
     else if (status) {
       updateData = { status }
       if (format) updateData.format = format
-      if (scheduledAt) updateData.scheduledAt = new Date(scheduledAt)
+      if (scheduledAt) updateData.scheduledAt = parseScheduledAt(scheduledAt)
     }
 
     // Update the match

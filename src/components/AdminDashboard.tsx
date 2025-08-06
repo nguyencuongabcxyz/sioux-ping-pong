@@ -608,7 +608,8 @@ const AdminDashboard = () => {
     // Set the time in the local timezone
     selectedDate.setHours(hours, minutes, 0, 0)
     
-    // Return the ISO string - this will be the exact time selected
+    // Convert to UTC for storage - this ensures consistent timezone handling
+    // across different deployments and browsers
     return selectedDate.toISOString()
   }
 
@@ -621,18 +622,17 @@ const AdminDashboard = () => {
       day: 'numeric',
       hour: 'numeric',
       minute: '2-digit',
-      hour12: true,
-      timeZone: 'UTC' // Force UTC interpretation to match how we stored it
+      hour12: true
     }
     
-    // Display the time as stored in UTC, ensuring consistent display
+    // Display the time as local time (converted from UTC)
     return date.toLocaleString('en-US', options)
   }
 
   // Helper function to extract time from datetime string
   const extractTimeFromDateTime = (dateTimeString: string) => {
     const date = new Date(dateTimeString)
-    // Convert to local timezone for display
+    // Convert UTC time back to local time for display in the form
     const localHours = date.getHours().toString().padStart(2, '0')
     const localMinutes = date.getMinutes().toString().padStart(2, '0')
     return `${localHours}:${localMinutes}`
