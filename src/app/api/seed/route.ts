@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
     console.log('Admin user created/updated:', admin.email);
 
     // Create tournament stage
-    const tournamentStage = await prisma.tournamentStage.upsert({
+    await prisma.tournamentStage.upsert({
       where: { id: 'default-stage' },
       update: {},
       create: {
@@ -211,14 +211,14 @@ export async function POST(request: NextRequest) {
         const minute = Math.floor(Math.random() * 4) * 15; // 0, 15, 30, or 45 minutes
         matchDate.setHours(hour, minute, 0, 0);
 
-        const match = await prisma.match.create({
+        await prisma.match.create({
           data: {
             tournamentTableId: table.id,
             homeTeamId: tableTeams[i].id,
             awayTeamId: tableTeams[j].id,
             scheduledAt: matchDate,
             status: 'SCHEDULED',
-            format: Math.random() > 0.7 ? 'BO5' : 'BO3', // 30% BO5, 70% BO3
+            format: 'BO3', // All group stage matches are BO3
             matchType: 'GROUP_STAGE',
           },
         });

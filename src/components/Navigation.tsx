@@ -39,8 +39,8 @@ const Navigation = () => {
           <div className="flex items-center">
             <div className="flex-shrink-0">
               <h1 className="text-lg sm:text-xl font-bold text-gray-900">
-                🏓 <span className="hidden sm:inline">Ping Pong Tournament</span>
-                <span className="sm:hidden">Tournament</span>
+                🏓 <span className="hidden sm:inline">Sioux Ping Pong Tournament 2025</span>
+                <span className="sm:hidden">Sioux Tournament</span>
               </h1>
             </div>
           </div>
