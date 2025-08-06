@@ -28,6 +28,11 @@ interface Game {
   completedAt?: string
 }
 
+interface TournamentTable {
+  id: string
+  name: string
+}
+
 interface Match {
   id: string
   scheduledAt: string
@@ -41,7 +46,7 @@ interface Match {
   awayScore?: number // Legacy field
   homeTeam: { id: string; name: string; member1Image?: string; member2Image?: string }
   awayTeam: { id: string; name: string; member1Image?: string; member2Image?: string }
-  tournamentTable?: { id: string; name: string }
+  tournamentTable?: TournamentTable
   games: Game[]
 }
 
@@ -64,15 +69,25 @@ const AdminDashboard = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null)
   const [advancingStage, setAdvancingStage] = useState(false)
+  const [tables, setTables] = useState<TournamentTable[]>([])
 
   useEffect(() => {
     fetchMatches()
     fetchTournamentStage()
-  }, [])
+    fetchTables()
+  }, [statusFilter, tableFilter])
 
   const fetchMatches = async () => {
     try {
-      const response = await fetch('/api/matches')
+      const params = new URLSearchParams()
+      if (statusFilter !== 'all') {
+        params.append('status', statusFilter)
+      }
+      if (tableFilter !== 'all') {
+        params.append('tableId', tableFilter)
+      }
+
+      const response = await fetch(`/api/matches?${params.toString()}`)
       if (response.ok) {
         const data = await response.json()
         setMatches(data.matches)
@@ -93,6 +108,18 @@ const AdminDashboard = () => {
       }
     } catch (error) {
       console.error('Error fetching tournament stage:', error)
+    }
+  }
+
+  const fetchTables = async () => {
+    try {
+      const response = await fetch('/api/tables')
+      if (response.ok) {
+        const data = await response.json()
+        setTables(data)
+      }
+    } catch (error) {
+      console.error('Error fetching tables:', error)
     }
   }
 
@@ -691,9 +718,11 @@ const AdminDashboard = () => {
               className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="all">All Tables</option>
-              <option value="cmdya4xs80001f00kgvawefc7">Table A</option>
-              <option value="cmdya4xsp0002f00krsin4w9e">Table B</option>
-              <option value="cmdya4xt10003f00kcl4vgvdc">Table C</option>
+              {tables.map((table) => (
+                <option key={table.id} value={table.id}>
+                  {table.name}
+                </option>
+              ))}
             </select>
           </div>
           

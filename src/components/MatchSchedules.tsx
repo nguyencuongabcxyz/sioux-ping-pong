@@ -56,6 +56,7 @@ const MatchSchedules = () => {
   const [error, setError] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [tableFilter, setTableFilter] = useState<string>('all')
+  const [tables, setTables] = useState<TournamentTable[]>([])
 
   useEffect(() => {
     const fetchMatches = async () => {
@@ -81,7 +82,20 @@ const MatchSchedules = () => {
       }
     }
 
+    const fetchTables = async () => {
+      try {
+        const response = await fetch('/api/tables')
+        if (response.ok) {
+          const data = await response.json()
+          setTables(data)
+        }
+      } catch (err) {
+        console.error('Error fetching tables:', err)
+      }
+    }
+
     fetchMatches()
+    fetchTables()
   }, [statusFilter, tableFilter])
 
   const formatDate = (dateString: string) => {
@@ -459,9 +473,11 @@ const MatchSchedules = () => {
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">All Tables</option>
-              <option value="cmdya4xs80001f00kgvawefc7">Table A</option>
-              <option value="cmdya4xsp0002f00krsin4w9e">Table B</option>
-              <option value="cmdya4xt10003f00kcl4vgvdc">Table C</option>
+              {tables.map((table) => (
+                <option key={table.id} value={table.id}>
+                  {table.name}
+                </option>
+              ))}
             </select>
           </div>
           
