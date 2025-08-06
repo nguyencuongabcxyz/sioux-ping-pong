@@ -163,18 +163,6 @@ export default function AwardsPage() {
           </div>
         </div>
 
-        {/* Additional Information */}
-        <div className="bg-green-50 rounded-lg border border-green-200 p-6">
-          <h2 className="text-xl font-bold text-green-900 mb-4">📋 Important Notes</h2>
-          <ul className="list-disc list-inside space-y-2 text-green-800">
-            <li>All team members will share the prize money equally</li>
-            <li>Prizes are subject to Vietnamese tax regulations</li>
-            <li>Tournament organizers reserve the right to modify prize distribution if necessary</li>
-            <li>Participation in the award ceremony is mandatory for prize collection</li>
-            <li>Photographs and videos may be taken during the ceremony for promotional purposes</li>
-          </ul>
-        </div>
-
       </div>
     </div>
   )

@@ -59,6 +59,48 @@ export default function RulesPage() {
           </div>
         </div>
 
+        {/* VAR Technology */}
+        <div className="bg-white rounded-lg shadow-sm border p-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <Target className="w-6 h-6 text-purple-500" />
+            📹 VAR Technology
+          </h2>
+          <div className="space-y-4">
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-2">VAR Implementation</h3>
+              <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
+                <li><strong>Available from:</strong> Knockout Stage only</li>
+                <li><strong>Recording:</strong> All matches will be recorded and uploaded to organizer channel</li>
+                <li><strong>Review Process:</strong> Video Assistant Referee (VAR) system for disputed calls</li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-2">VAR Request Rules</h3>
+              <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
+                <li><strong>Maximum Requests:</strong> Each team can request up to 2 VAR reviews per game</li>
+                <li><strong>Request Timing:</strong> VAR requests must be made immediately after the disputed call</li>
+                <li><strong>Review Duration:</strong> VAR review typically takes 30-60 seconds</li>
+                <li><strong>Final Decision:</strong> VAR decision is final and cannot be appealed</li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-2">Reviewable Calls</h3>
+              <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
+                <li>Service faults (ball touching net, wrong diagonal, etc.)</li>
+                <li>Ball touching table edge or side</li>
+                <li>Player touching table or net during play</li>
+                <li>Disputed scoring decisions</li>
+                <li>Equipment interference</li>
+              </ul>
+            </div>
+            <div className="bg-purple-50 border border-purple-200 rounded-md p-3 mt-4">
+              <p className="text-purple-800 font-semibold">
+                🎥 <strong>Video Coverage:</strong> All knockout stage matches will be recorded and made available on the organizer's channel for transparency and review purposes.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Game Rules */}
         <div className="bg-white rounded-lg shadow-sm border p-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
@@ -88,6 +130,7 @@ export default function RulesPage() {
                 <li>Both players must alternate hitting the ball</li>
                 <li>Players alternate serves within each game</li>
                 <li>Teams can decide their hitting order at the start of each game</li>
+                <li>In table tennis, players can touch the table with their racket or any part of their body except their free hand. Touching the table with the free hand during a rally results in a point for the opponent. Touching the net, including its supports, is also illegal and results in a point for the opponent.</li>
               </ul>
             </div>
           </div>
