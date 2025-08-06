@@ -43,7 +43,7 @@ async function seedDatabase() {
             console.log(`   Email: ${response.adminEmail}`);
             console.log(`   Password: ${response.adminPassword}`);
             console.log('\n🎯 You can now access the admin panel at:');
-            console.log(`   ${config.baseUrl}/admin`);
+            console.log(`   ${config.baseUrl}/assmin`);
           } else {
             console.error('❌ Seeding failed:', response);
           }

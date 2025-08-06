@@ -95,7 +95,7 @@ async function main() {
     console.log('\n📋 Next steps:');
     console.log('   1. Start the development server: npm run dev');
     console.log('   2. Open http://localhost:3000 in your browser');
-    console.log('   3. Access admin panel at http://localhost:3000/admin/login');
+    console.log('   3. Access admin panel at http://localhost:3000/assmin/login');
     console.log('   4. Use your admin credentials to log in\n');
     
     console.log('🏓 Happy tournament managing!');

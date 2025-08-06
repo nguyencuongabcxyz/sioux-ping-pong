@@ -29,7 +29,7 @@ export default function AdminLogin() {
       } else {
         const session = await getSession()
         if (session) {
-          router.push('/admin')
+          router.push('/assmin')
           router.refresh()
         }
       }
@@ -123,12 +123,6 @@ export default function AdminLogin() {
                 </>
               )}
             </button>
-          </div>
-
-          <div className="text-center">
-            <p className="text-xs text-gray-500">
-              Default credentials: admin@company.com / admin123
-            </p>
           </div>
         </form>
       </div>

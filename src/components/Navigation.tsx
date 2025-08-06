@@ -25,11 +25,6 @@ const Navigation = () => {
       href: '/bracket',
       icon: Target,
     },
-    {
-      name: 'Admin',
-      href: '/admin',
-      icon: Settings,
-    },
   ]
 
   return (

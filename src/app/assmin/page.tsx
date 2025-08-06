@@ -13,7 +13,7 @@ export default function AdminPage() {
     if (status === 'loading') return // Still loading
 
     if (!session) {
-      router.push('/admin/login')
+      router.push('/assmin/login')
     }
   }, [session, status, router])
 

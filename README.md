@@ -92,7 +92,7 @@ A modern Next.js application for managing company ping pong tournaments with sta
 
 6. **Access the application**
    - Main App: `http://localhost:3000`
-   - Admin Login: `http://localhost:3000/admin/login`
+   - Admin Login: `http://localhost:3000/assmin/login`
    - Default Admin Credentials: `admin@company.com` / `admin123`
 
 ## 📱 Application Structure
@@ -102,8 +102,8 @@ A modern Next.js application for managing company ping pong tournaments with sta
 - **`/schedules`** - Match Schedules
 
 ### Admin Pages
-- **`/admin/login`** - Admin Authentication
-- **`/admin`** - Admin Dashboard (Protected)
+- **`/assmin/login`** - Admin Authentication
+- **`/assmin`** - Admin Dashboard (Protected)
 
 ### API Routes
 - **`/api/standings`** - Get tournament standings
@@ -119,7 +119,7 @@ A modern Next.js application for managing company ping pong tournaments with sta
 3. **Filter Matches**: Use status and table filters to find specific matches
 
 ### For Admins
-1. **Login**: Access `/admin/login` with admin credentials
+1. **Login**: Access `/assmin/login` with admin credentials
 2. **Manage Matches**: Edit match scores and statuses from the admin dashboard
 3. **View Analytics**: Monitor tournament progress with quick stats
 4. **Update Results**: Click edit icons to update match scores and completion status

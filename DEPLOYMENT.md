@@ -132,13 +132,13 @@ Then call: `https://your-app.vercel.app/api/migrate?key=your-secret-key`
 - [ ] Application deployed successfully
 - [ ] Database migrations run
 - [ ] Database seeded with initial data
-- [ ] Admin panel accessible at `/admin`
+- [ ] Admin panel accessible at `/assmin`
 - [ ] Login works with `admin@company.com` / `admin123`
 
 ## Access Your Application
 
 - **Main App**: `https://your-app.vercel.app`
-- **Admin Panel**: `https://your-app.vercel.app/admin`
+- **Admin Panel**: `https://your-app.vercel.app/assmin`
 - **Login**: `admin@company.com` / `admin123`
 
 ## Support
