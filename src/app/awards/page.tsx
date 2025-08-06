@@ -2,7 +2,7 @@ import { Trophy, Medal, Award, Star, Gift } from 'lucide-react'
 
 export default function AwardsPage() {
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       {/* Header */}
       <div className="text-center">
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 flex items-center justify-center gap-2" style={{ color: '#F15D03' }}>
@@ -31,7 +31,7 @@ export default function AwardsPage() {
 
         {/* 1st Place - Champion */}
         <div className="bg-gradient-to-r from-yellow-100 to-yellow-200 rounded-lg border-2 border-yellow-300 p-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="bg-yellow-500 rounded-full p-3">
                 <Trophy className="w-8 h-8 text-white" />
@@ -43,7 +43,7 @@ export default function AwardsPage() {
                 <p className="text-lg text-gray-700">Tournament Winner</p>
               </div>
             </div>
-            <div className="text-right">
+            <div className="text-center sm:text-right">
               <div className="text-3xl font-bold text-yellow-600">
                 1,000,000 VND
               </div>
@@ -59,7 +59,7 @@ export default function AwardsPage() {
 
         {/* 2nd Place - Runner Up */}
         <div className="bg-gradient-to-r from-gray-100 to-gray-200 rounded-lg border-2 border-gray-300 p-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="bg-gray-500 rounded-full p-3">
                 <Medal className="w-8 h-8 text-white" />
@@ -71,7 +71,7 @@ export default function AwardsPage() {
                 <p className="text-lg text-gray-700">Tournament Finalist</p>
               </div>
             </div>
-            <div className="text-right">
+            <div className="text-center sm:text-right">
               <div className="text-3xl font-bold text-gray-600">
                 600,000 VND
               </div>
@@ -87,7 +87,7 @@ export default function AwardsPage() {
 
         {/* 3rd Place - Bronze */}
         <div className="bg-gradient-to-r from-orange-100 to-orange-200 rounded-lg border-2 border-orange-300 p-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="bg-orange-500 rounded-full p-3">
                 <Award className="w-8 h-8 text-white" />
@@ -99,7 +99,7 @@ export default function AwardsPage() {
                 <p className="text-lg text-gray-700">Tournament Semi-Finalist</p>
               </div>
             </div>
-            <div className="text-right">
+            <div className="text-center sm:text-right">
               <div className="text-3xl font-bold text-orange-600">
                 400,000 VND
               </div>

@@ -21,6 +21,7 @@ export const metadata: Metadata = {
   icons: {
     icon: "/paddle.svg",
   },
+  viewport: "width=device-width, initial-scale=1, maximum-scale=1",
 };
 
 export default function RootLayout({
@@ -37,7 +38,7 @@ export default function RootLayout({
         <AuthProvider>
           <AnnouncementBar />
           <Navigation />
-          <main className="container mx-auto px-4 py-8">
+          <main className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
             {children}
           </main>
         </AuthProvider>

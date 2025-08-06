@@ -2,7 +2,7 @@ import TournamentStandings from '@/components/TournamentStandings'
 
 export default function Home() {
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       <div className="text-center">
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2" style={{ color: '#F15D03' }}>
           Tournament Standings

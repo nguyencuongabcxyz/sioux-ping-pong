@@ -78,22 +78,162 @@ const TournamentStandings = () => {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row gap-8">
-      <div className="flex-1 space-y-8">
+    <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
+      <div className="flex-1 space-y-6 lg:space-y-8">
         {standingsData?.tables.map((table, tableIndex) => (
         <div key={table.id} className="bg-white rounded-lg shadow-lg overflow-hidden">
-          <div className="px-6 py-4" style={{ background: 'linear-gradient(to right, #82589F, #6B4E7A)' }}>
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <Trophy className="w-5 h-5" />
+          <div className="px-4 sm:px-6 py-4" style={{ background: 'linear-gradient(to right, #82589F, #6B4E7A)' }}>
+            <h2 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+              <Trophy className="w-4 h-5 sm:w-5 sm:h-5" />
               {table.name}
             </h2>
             {table.description && (
-              <p className="text-blue-100 text-sm mt-1">{table.description}</p>
+              <p className="text-blue-100 text-xs sm:text-sm mt-1">{table.description}</p>
             )}
           </div>
           
-          {/* Table View */}
-          <div className="overflow-x-auto">
+          {/* Mobile Card View */}
+          <div className="lg:hidden">
+            <div className="divide-y divide-gray-200">
+              {table.teams.map((team, index) => (
+                <div 
+                  key={team.id}
+                  className={`p-4 ${
+                    index === 0 ? 'bg-yellow-50' : ''
+                  } ${
+                    standingsData?.knockoutGenerated && !team.advancedToKnockout 
+                      ? 'opacity-50 bg-gray-100' 
+                      : ''
+                  }`}
+                >
+                  {/* Rank and Team Info */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
+                        <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${
+                          index === 0 
+                            ? 'bg-yellow-100 text-yellow-800' 
+                            : index === 1 
+                            ? 'bg-gray-100 text-gray-800'
+                            : index === 2
+                            ? 'bg-orange-100 text-orange-800'
+                            : 'bg-gray-50 text-gray-600'
+                        }`}>
+                          {index + 1}
+                        </span>
+                        {index === 0 && <Trophy className="w-4 h-4 text-yellow-500" />}
+                      </div>
+                      
+                      {/* Player Images */}
+                      <div className="flex -space-x-2">
+                        {team.member1Image && (
+                          <img 
+                            src={team.member1Image} 
+                            alt="Player 1" 
+                            className="w-8 h-8 rounded-full border-2 border-white object-cover shadow-sm bg-gray-100"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = '/api/placeholder/32/32';
+                            }}
+                          />
+                        )}
+                        {team.member2Image && (
+                          <img 
+                            src={team.member2Image} 
+                            alt="Player 2" 
+                            className="w-8 h-8 rounded-full border-2 border-white object-cover shadow-sm bg-gray-100"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = '/api/placeholder/32/32';
+                            }}
+                          />
+                        )}
+                        {(!team.member1Image && !team.member2Image) && (
+                          <div className="w-8 h-8 rounded-full border-2 border-white bg-gray-200 flex items-center justify-center">
+                            <span className="text-gray-600 text-xs">👥</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">{team.name}</div>
+                        {(standingsData?.knockoutGenerated || standingsData?.groupStageCompleted) && team.advancedToKnockout && (
+                          <div className="flex items-center gap-1 mt-1">
+                            <Target className="w-3 h-3 text-green-600" />
+                            <span className="text-xs text-green-600 font-medium">Advanced</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="text-right">
+                      <div className="text-lg font-bold text-blue-600">{team.tournamentPoints}</div>
+                      <div className="text-xs text-gray-500">Pts</div>
+                    </div>
+                  </div>
+                  
+                  {/* Stats Grid */}
+                  <div className="grid grid-cols-4 gap-2 text-xs">
+                    <div className="text-center">
+                      <div className="font-medium text-gray-900">{team.matchesPlayed}</div>
+                      <div className="text-gray-500">MP</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="font-medium text-green-600">{team.wins}</div>
+                      <div className="text-gray-500">W</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="font-medium text-red-600">{team.losses}</div>
+                      <div className="text-gray-500">L</div>
+                    </div>
+                    <div className="text-center">
+                      <div className={`font-medium flex items-center justify-center ${
+                        team.gameDifference > 0 
+                          ? 'text-green-600' 
+                          : team.gameDifference < 0 
+                          ? 'text-red-600' 
+                          : 'text-gray-500'
+                      }`}>
+                        {team.gameDifference > 0 && <TrendingUp className="w-3 h-3 mr-1" />}
+                        {team.gameDifference < 0 && <TrendingDown className="w-3 h-3 mr-1" />}
+                        {team.gameDifference > 0 ? '+' : ''}{team.gameDifference}
+                      </div>
+                      <div className="text-gray-500">GD</div>
+                    </div>
+                  </div>
+                  
+                  {/* Points Info */}
+                  <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+                    <div className="text-center">
+                      <div className="font-medium text-gray-900">{team.points}</div>
+                      <div className="text-gray-500">PF</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="font-medium text-gray-900">{team.pointsAgainst}</div>
+                      <div className="text-gray-500">PA</div>
+                    </div>
+                    <div className="text-center">
+                      <div className={`font-medium flex items-center justify-center ${
+                        team.pointDifferential > 0 
+                          ? 'text-green-600' 
+                          : team.pointDifferential < 0 
+                          ? 'text-red-600' 
+                          : 'text-gray-500'
+                      }`}>
+                        {team.pointDifferential > 0 && <TrendingUp className="w-3 h-3 mr-1" />}
+                        {team.pointDifferential < 0 && <TrendingDown className="w-3 h-3 mr-1" />}
+                        {team.pointDifferential > 0 ? '+' : ''}{team.pointDifferential}
+                      </div>
+                      <div className="text-gray-500">PD</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          {/* Desktop Table View */}
+          <div className="hidden lg:block overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
@@ -271,8 +411,8 @@ const TournamentStandings = () => {
       )}
       </div>
 
-      {/* Side Legend */}
-      <div className="lg:w-80 lg:h-screen lg:sticky lg:top-16 space-y-4">
+      {/* Side Legend - Mobile Hidden, Desktop Sticky */}
+      <div className="hidden lg:block lg:w-80 lg:h-screen lg:sticky lg:top-16 space-y-4">
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3 h-full">
           <div>
             <h3 className="text-sm font-medium text-blue-800 mb-2">🏆 Ranking System</h3>
@@ -297,6 +437,16 @@ const TournamentStandings = () => {
               <div><strong>PD:</strong> Point Difference</div>
             </div>
           </div>
+        </div>
+      </div>
+      
+      {/* Mobile Legend */}
+      <div className="lg:hidden bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+        <h3 className="text-sm font-medium text-blue-800 mb-2">📊 Legend</h3>
+        <div className="text-xs text-blue-700 space-y-1">
+          <div><strong>Pts:</strong> Tournament Points • <strong>MP:</strong> Matches Played</div>
+          <div><strong>W:</strong> Wins • <strong>L:</strong> Losses • <strong>GD:</strong> Game Difference</div>
+          <div><strong>PF:</strong> Points For • <strong>PA:</strong> Points Against • <strong>PD:</strong> Point Difference</div>
         </div>
       </div>
     </div>

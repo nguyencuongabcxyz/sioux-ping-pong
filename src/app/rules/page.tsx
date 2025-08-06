@@ -2,7 +2,7 @@ import { BookOpen, Trophy, Users, Clock, Target, Star } from 'lucide-react'
 
 export default function RulesPage() {
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       {/* Header */}
       <div className="text-center">
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 flex items-center justify-center gap-2" style={{ color: '#F15D03' }}>

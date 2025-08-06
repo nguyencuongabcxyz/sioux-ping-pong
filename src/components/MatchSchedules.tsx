@@ -170,7 +170,7 @@ const MatchSchedules = () => {
           <img 
             src={team.member1Image} 
             alt="Player 1" 
-            className="w-8 h-8 rounded-full border-2 border-white object-cover shadow-sm bg-gray-100"
+            className="w-6 h-6 sm:w-8 sm:h-8 rounded-full border-2 border-white object-cover shadow-sm bg-gray-100"
             onError={(e) => { 
               const target = e.target as HTMLImageElement
               target.src = '/api/placeholder/32/32'
@@ -181,7 +181,7 @@ const MatchSchedules = () => {
           <img 
             src={team.member2Image} 
             alt="Player 2" 
-            className="w-8 h-8 rounded-full border-2 border-white object-cover shadow-sm bg-gray-100"
+            className="w-6 h-6 sm:w-8 sm:h-8 rounded-full border-2 border-white object-cover shadow-sm bg-gray-100"
             onError={(e) => { 
               const target = e.target as HTMLImageElement
               target.src = '/api/placeholder/32/32'
@@ -189,8 +189,8 @@ const MatchSchedules = () => {
           />
         )}
         {(!team.member1Image && !team.member2Image) && (
-          <div className="w-8 h-8 rounded-full border-2 border-white bg-gray-200 flex items-center justify-center">
-            <Users className="w-4 h-4 text-gray-600" />
+          <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full border-2 border-white bg-gray-200 flex items-center justify-center">
+            <Users className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600" />
           </div>
         )}
       </div>
@@ -247,15 +247,15 @@ const MatchSchedules = () => {
     const awayWinner = isCompleted && match.awayGamesWon > match.homeGamesWon
 
     return (
-      <div className="p-4 sm:p-6 hover:bg-gray-50 transition-colors">
+      <div className="p-3 sm:p-4 lg:p-6 hover:bg-gray-50 transition-colors">
         {/* Match Info Header */}
-        <div className="flex items-center gap-4 mb-4">
-          <div className="flex items-center gap-2 text-sm text-gray-500">
-            <Clock className="w-4 h-4" />
+        <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-3 sm:mb-4">
+          <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-500">
+            <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
             {formatTime(match.scheduledAt)}
           </div>
           {match.tournamentTable && (
-            <div className={`flex items-center gap-2 text-sm font-semibold px-3 py-1 rounded-full border ${
+            <div className={`flex items-center gap-1 sm:gap-2 text-xs sm:text-sm font-semibold px-2 sm:px-3 py-1 rounded-full border ${
               match.tournamentTable.name === 'Table A' 
                 ? 'bg-orange-100 text-orange-800 border-orange-200' 
                 : match.tournamentTable.name === 'Table B'
@@ -264,12 +264,12 @@ const MatchSchedules = () => {
                 ? 'bg-purple-100 text-purple-800 border-purple-200'
                 : 'bg-blue-100 text-blue-800 border-blue-200'
             }`}>
-              <MapPin className="w-4 h-4" />
+              <MapPin className="w-3 h-3 sm:w-4 sm:h-4" />
               {match.tournamentTable.name}
             </div>
           )}
           {match.matchType === 'KNOCKOUT' && match.round && (
-            <div className={`flex items-center gap-1 text-sm px-2 py-1 rounded-full ${matchTypeInfo.bgColor} ${matchTypeInfo.color} border ${matchTypeInfo.borderColor}`}>
+            <div className={`flex items-center gap-1 text-xs sm:text-sm px-2 py-1 rounded-full ${matchTypeInfo.bgColor} ${matchTypeInfo.color} border ${matchTypeInfo.borderColor}`}>
               <matchTypeInfo.icon className="w-3 h-3" />
               {matchTypeInfo.label}
             </div>
@@ -285,15 +285,15 @@ const MatchSchedules = () => {
           {/* Mobile Layout */}
           <div className="md:hidden">
             {/* Home Team */}
-            <div className={`flex items-center justify-between p-4 rounded-lg border-2 transition-all ${
+            <div className={`flex items-center justify-between p-3 sm:p-4 rounded-lg border-2 transition-all ${
               homeWinner 
                 ? 'bg-green-50 border-green-200 shadow-sm' 
                 : 'bg-gray-50 border-gray-200'
             }`}>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <PlayerImages team={match.homeTeam} />
                 <div>
-                  <div className={`font-semibold ${homeWinner ? 'text-green-800' : 'text-gray-900'}`}>
+                  <div className={`font-semibold text-sm sm:text-base ${homeWinner ? 'text-green-800' : 'text-gray-900'}`}>
                     {match.homeTeam.name}
                   </div>
                   <div className="text-xs text-gray-500">
@@ -303,7 +303,7 @@ const MatchSchedules = () => {
               </div>
               {isCompleted && (
                 <div className="text-right">
-                  <div className={`text-3xl font-bold ${homeWinner ? 'text-green-600' : 'text-gray-400'}`}>
+                  <div className={`text-2xl sm:text-3xl font-bold ${homeWinner ? 'text-green-600' : 'text-gray-400'}`}>
                     {result.homeDisplay}
                   </div>
                   <div className="text-xs text-gray-500">games won</div>
@@ -312,33 +312,33 @@ const MatchSchedules = () => {
             </div>
 
             {/* VS/Result Status */}
-            <div className="flex flex-col items-center justify-center py-3">
+            <div className="flex flex-col items-center justify-center py-2 sm:py-3">
               {isCompleted ? (
                 <div className="text-center">
-                  <div className="text-lg font-bold text-gray-600 mb-1">FINAL</div>
+                  <div className="text-base sm:text-lg font-bold text-gray-600 mb-1">FINAL</div>
                   {result.gameDetails && (
-                    <div className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                    <div className="text-xs sm:text-sm text-gray-500 bg-gray-100 px-2 sm:px-3 py-1 rounded-full">
                       Game Scores: {result.gameDetails}
                     </div>
                   )}
                 </div>
               ) : match.status === 'IN_PROGRESS' ? (
-                <div className="text-yellow-600 font-bold text-lg animate-pulse">LIVE</div>
+                <div className="text-yellow-600 font-bold text-base sm:text-lg animate-pulse">LIVE</div>
               ) : (
-                <div className="text-gray-500 font-medium text-lg">VS</div>
+                <div className="text-gray-500 font-medium text-base sm:text-lg">VS</div>
               )}
             </div>
 
             {/* Away Team */}
-            <div className={`flex items-center justify-between p-4 rounded-lg border-2 transition-all ${
+            <div className={`flex items-center justify-between p-3 sm:p-4 rounded-lg border-2 transition-all ${
               awayWinner 
                 ? 'bg-green-50 border-green-200 shadow-sm' 
                 : 'bg-gray-50 border-gray-200'
             }`}>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <PlayerImages team={match.awayTeam} />
                 <div>
-                  <div className={`font-semibold ${awayWinner ? 'text-green-800' : 'text-gray-900'}`}>
+                  <div className={`font-semibold text-sm sm:text-base ${awayWinner ? 'text-green-800' : 'text-gray-900'}`}>
                     {match.awayTeam.name}
                   </div>
                   <div className="text-xs text-gray-500">
@@ -348,7 +348,7 @@ const MatchSchedules = () => {
               </div>
               {isCompleted && (
                 <div className="text-right">
-                  <div className={`text-3xl font-bold ${awayWinner ? 'text-green-600' : 'text-gray-400'}`}>
+                  <div className={`text-2xl sm:text-3xl font-bold ${awayWinner ? 'text-green-600' : 'text-gray-400'}`}>
                     {result.awayDisplay}
                   </div>
                   <div className="text-xs text-gray-500">games won</div>
@@ -451,12 +451,12 @@ const MatchSchedules = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow-sm border p-4">
-        <div className="flex flex-col sm:flex-row gap-4">
+      <div className="bg-white rounded-lg shadow-sm border p-3 sm:p-4">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
           <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
               Filter by Status
             </label>
             <select
@@ -473,7 +473,7 @@ const MatchSchedules = () => {
           </div>
           
           <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
               Filter by Table
             </label>
             <select
@@ -496,26 +496,26 @@ const MatchSchedules = () => {
                 setStatusFilter('all')
                 setTableFilter('all')
               }}
-              className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors text-sm"
+              className="w-full sm:w-auto px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors text-sm"
             >
               Clear Filters
             </button>
           </div>
         </div>
         
-        <div className="mt-4 text-sm text-gray-600">
+        <div className="mt-3 sm:mt-4 text-sm text-gray-600">
           Showing {matchesData.matches.length} of {matchesData.total} matches
         </div>
       </div>
 
       {/* Match Results Summary */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 border">
-        <div className="flex items-center justify-between">
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 sm:p-6 border">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Tournament Progress</h2>
-            <p className="text-gray-600">Total matches: {matchesData.total}</p>
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900">Tournament Progress</h2>
+            <p className="text-sm text-gray-600">Total matches: {matchesData.total}</p>
           </div>
-          <Trophy className="w-8 h-8 text-blue-600" />
+          <Trophy className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600" />
         </div>
       </div>
 
@@ -530,14 +530,14 @@ const MatchSchedules = () => {
           const groupedByType = groupMatchesByTypeAndDate(matchesData.matches)
           
           return (
-            <div className="space-y-8">
+            <div className="space-y-6 sm:space-y-8">
               {/* Group Stage Matches */}
               {Object.keys(groupedByType.GROUP_STAGE).length > 0 && (
                 <div className="space-y-4">
                   <div className="flex items-center gap-3 pb-3 border-b-2 border-blue-200">
-                    <Trophy className="w-6 h-6 text-blue-600" />
-                    <h2 className="text-2xl font-bold text-blue-900">Group Stage</h2>
-                    <div className="text-sm text-blue-600 bg-blue-100 px-3 py-1 rounded-full">
+                    <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+                    <h2 className="text-xl sm:text-2xl font-bold text-blue-900">Group Stage</h2>
+                    <div className="text-xs sm:text-sm text-blue-600 bg-blue-100 px-2 sm:px-3 py-1 rounded-full">
                       Round Robin
                     </div>
                   </div>
@@ -546,9 +546,9 @@ const MatchSchedules = () => {
                     .sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())
                     .map(([date, matches]) => (
                       <div key={`group-${date}`} className="bg-white rounded-lg shadow-sm border border-blue-200 overflow-hidden">
-                        <div className="bg-blue-50 px-6 py-3 border-b border-blue-200">
-                          <h3 className="text-lg font-semibold text-blue-900 flex items-center gap-2">
-                            <Calendar className="w-5 h-5" />
+                        <div className="bg-blue-50 px-4 sm:px-6 py-3 border-b border-blue-200">
+                          <h3 className="text-base sm:text-lg font-semibold text-blue-900 flex items-center gap-2">
+                            <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
                             {formatDate(date)}
                           </h3>
                         </div>
@@ -569,9 +569,9 @@ const MatchSchedules = () => {
               {Object.keys(groupedByType.KNOCKOUT).length > 0 && (
                 <div className="space-y-4">
                   <div className="flex items-center gap-3 pb-3 border-b-2 border-purple-200">
-                    <Crown className="w-6 h-6 text-purple-600" />
-                    <h2 className="text-2xl font-bold text-purple-900">Knockout Stage</h2>
-                    <div className="text-sm text-purple-600 bg-purple-100 px-3 py-1 rounded-full">
+                    <Crown className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
+                    <h2 className="text-xl sm:text-2xl font-bold text-purple-900">Knockout Stage</h2>
+                    <div className="text-xs sm:text-sm text-purple-600 bg-purple-100 px-2 sm:px-3 py-1 rounded-full">
                       Single Elimination
                     </div>
                   </div>
@@ -580,9 +580,9 @@ const MatchSchedules = () => {
                     .sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())
                     .map(([date, matches]) => (
                       <div key={`knockout-${date}`} className="bg-white rounded-lg shadow-sm border border-purple-200 overflow-hidden">
-                        <div className="bg-purple-50 px-6 py-3 border-b border-purple-200">
-                          <h3 className="text-lg font-semibold text-purple-900 flex items-center gap-2">
-                            <Calendar className="w-5 h-5" />
+                        <div className="bg-purple-50 px-4 sm:px-6 py-3 border-b border-purple-200">
+                          <h3 className="text-base sm:text-lg font-semibold text-purple-900 flex items-center gap-2">
+                            <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
                             {formatDate(date)}
                           </h3>
                         </div>
