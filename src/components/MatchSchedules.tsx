@@ -255,7 +255,15 @@ const MatchSchedules = () => {
             {formatTime(match.scheduledAt)}
           </div>
           {match.tournamentTable && (
-            <div className="flex items-center gap-2 text-sm text-gray-500">
+            <div className={`flex items-center gap-2 text-sm font-semibold px-3 py-1 rounded-full border ${
+              match.tournamentTable.name === 'Table A' 
+                ? 'bg-orange-100 text-orange-800 border-orange-200' 
+                : match.tournamentTable.name === 'Table B'
+                ? 'bg-indigo-100 text-indigo-800 border-indigo-200'
+                : match.tournamentTable.name === 'Table C'
+                ? 'bg-purple-100 text-purple-800 border-purple-200'
+                : 'bg-blue-100 text-blue-800 border-blue-200'
+            }`}>
               <MapPin className="w-4 h-4" />
               {match.tournamentTable.name}
             </div>
