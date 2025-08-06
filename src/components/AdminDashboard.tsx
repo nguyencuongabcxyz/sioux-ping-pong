@@ -72,12 +72,14 @@ const AdminDashboard = () => {
   const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null)
   const [advancingStage, setAdvancingStage] = useState(false)
   const [tables, setTables] = useState<TournamentTable[]>([])
+  const [sortBy, setSortBy] = useState<'date' | 'status' | 'table'>('date')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
 
   useEffect(() => {
     fetchMatches()
     fetchTournamentStage()
     fetchTables()
-  }, [statusFilter, tableFilter])
+  }, [statusFilter, tableFilter, sortBy, sortOrder])
 
   const fetchMatches = async () => {
     try {
@@ -453,16 +455,7 @@ const AdminDashboard = () => {
     return `${match.homeGamesWon} - ${match.awayGamesWon} (${completedGames.map(g => `${g.homeScore}-${g.awayScore}`).join(', ')})`
   }
 
-  const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    })
-  }
+
 
   const getMatchTypeInfo = (matchType: string, round?: string) => {
     if (matchType === 'KNOCKOUT') {
@@ -506,15 +499,74 @@ const AdminDashboard = () => {
 
   // Helper function to create datetime string from date and time
   const createDateTimeString = (date: string, time: string) => {
-    return `${date}T${time}`
+    // Parse the time (e.g., "12:30" or "17:30")
+    const [hours, minutes] = time.split(':').map(Number)
+    
+    // Create a date object for the selected date
+    const selectedDate = new Date(date)
+    
+    // Set the time in the local timezone
+    selectedDate.setHours(hours, minutes, 0, 0)
+    
+    // Return the ISO string - this will be the exact time selected
+    return selectedDate.toISOString()
+  }
+
+  // Helper function to format time for display (shows exactly what was selected)
+  const formatTimeForDisplay = (dateString: string) => {
+    const date = new Date(dateString)
+    const options: Intl.DateTimeFormatOptions = {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    }
+    
+    // Use the browser's local timezone for display
+    return date.toLocaleString('en-US', options)
   }
 
   // Helper function to extract time from datetime string
   const extractTimeFromDateTime = (dateTimeString: string) => {
     const date = new Date(dateTimeString)
-    const hours = date.getHours().toString().padStart(2, '0')
-    const minutes = date.getMinutes().toString().padStart(2, '0')
-    return `${hours}:${minutes}`
+    // Convert to local timezone for display
+    const localHours = date.getHours().toString().padStart(2, '0')
+    const localMinutes = date.getMinutes().toString().padStart(2, '0')
+    return `${localHours}:${localMinutes}`
+  }
+
+  // Sort function
+  const sortMatches = (matches: Match[]) => {
+    return matches.sort((a, b) => {
+      let aValue: any
+      let bValue: any
+      
+      switch (sortBy) {
+        case 'date':
+          aValue = new Date(a.scheduledAt).getTime()
+          bValue = new Date(b.scheduledAt).getTime()
+          break
+        case 'status':
+          aValue = a.status
+          bValue = b.status
+          break
+        case 'table':
+          aValue = a.tournamentTable?.name || ''
+          bValue = b.tournamentTable?.name || ''
+          break
+        default:
+          aValue = new Date(a.scheduledAt).getTime()
+          bValue = new Date(b.scheduledAt).getTime()
+      }
+      
+      if (sortOrder === 'asc') {
+        return aValue > bValue ? 1 : -1
+      } else {
+        return aValue < bValue ? 1 : -1
+      }
+    })
   }
 
   // Filter matches based on selected filters
@@ -532,9 +584,10 @@ const AdminDashboard = () => {
     return true
   })
 
-  // Separate matches by type
-  const groupStageMatches = filteredMatches.filter(match => match.matchType === 'GROUP_STAGE')
-  const knockoutMatches = filteredMatches.filter(match => match.matchType === 'KNOCKOUT')
+  // Sort and separate matches by type
+  const sortedMatches = sortMatches(filteredMatches)
+  const groupStageMatches = sortedMatches.filter(match => match.matchType === 'GROUP_STAGE')
+  const knockoutMatches = sortedMatches.filter(match => match.matchType === 'KNOCKOUT')
 
   if (loading) {
     return (
@@ -782,7 +835,7 @@ const AdminDashboard = () => {
             </select>
           </div>
           
-          <div className="flex items-end">
+          <div className="flex items-end gap-2">
             <button
               onClick={() => {
                 setTableFilter('all')
@@ -791,6 +844,50 @@ const AdminDashboard = () => {
               className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
             >
               Clear Filters
+            </button>
+          </div>
+        </div>
+        
+        {/* Sorting Controls */}
+        <div className="mt-4 flex flex-col sm:flex-row gap-4">
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Sort By
+            </label>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as 'date' | 'status' | 'table')}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="date">Date & Time</option>
+              <option value="status">Status</option>
+              <option value="table">Table</option>
+            </select>
+          </div>
+          
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Sort Order
+            </label>
+            <select
+              value={sortOrder}
+              onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="asc">Ascending</option>
+              <option value="desc">Descending</option>
+            </select>
+          </div>
+          
+          <div className="flex items-end">
+            <button
+              onClick={() => {
+                setSortBy('date')
+                setSortOrder('asc')
+              }}
+              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+            >
+              Reset Sort
             </button>
           </div>
         </div>
@@ -908,7 +1005,7 @@ const AdminDashboard = () => {
                             <span className="font-medium">{match.awayTeam.name}</span>
                           </div>
                           <div className="text-xs text-gray-500 sm:hidden mt-1">
-                            {match.tournamentTable?.name} • {formatDateTime(match.scheduledAt)}
+                            {match.tournamentTable?.name} • {formatTimeForDisplay(match.scheduledAt)}
                           </div>
                         </div>
                       </td>
@@ -937,7 +1034,7 @@ const AdminDashboard = () => {
                             </select>
                           </div>
                         ) : (
-                          formatDateTime(match.scheduledAt)
+                          formatTimeForDisplay(match.scheduledAt)
                         )}
                       </td>
                       <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
@@ -1156,7 +1253,7 @@ const AdminDashboard = () => {
                               <span className="font-medium">{match.awayTeam.name}</span>
                             </div>
                             <div className="text-xs text-gray-500 sm:hidden mt-1">
-                              {matchTypeInfo.label} • {formatDateTime(match.scheduledAt)}
+                              {matchTypeInfo.label} • {formatTimeForDisplay(match.scheduledAt)}
                             </div>
                           </div>
                         </td>
@@ -1188,7 +1285,7 @@ const AdminDashboard = () => {
                               </select>
                             </div>
                           ) : (
-                            formatDateTime(match.scheduledAt)
+                            formatTimeForDisplay(match.scheduledAt)
                           )}
                         </td>
                         <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
