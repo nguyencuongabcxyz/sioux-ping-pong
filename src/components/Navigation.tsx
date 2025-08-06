@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { Trophy, Calendar, Settings, Menu, X, Target } from 'lucide-react'
+import { Trophy, Calendar, Menu, X, Target, BookOpen, Gift } from 'lucide-react'
 
 const Navigation = () => {
   const pathname = usePathname()
@@ -24,6 +24,16 @@ const Navigation = () => {
       name: 'Bracket',
       href: '/bracket',
       icon: Target,
+    },
+    {
+      name: 'Rules',
+      href: '/rules',
+      icon: BookOpen,
+    },
+    {
+      name: 'Awards',
+      href: '/awards',
+      icon: Gift,
     },
   ]
 
