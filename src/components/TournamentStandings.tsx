@@ -41,23 +41,24 @@ const TournamentStandings = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    const fetchStandings = async () => {
-      try {
-        const response = await fetch('/api/standings')
-        if (!response.ok) {
-          throw new Error('Failed to fetch standings')
-        }
-        const data = await response.json()
-        console.log('Standings data received:', data)
-        setStandingsData(data)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred')
-      } finally {
-        setLoading(false)
+  const fetchStandings = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/standings')
+      if (!response.ok) {
+        throw new Error('Failed to fetch standings')
       }
+      const data = await response.json()
+      console.log('Standings data received:', data)
+      setStandingsData(data)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
+    } finally {
+      setLoading(false)
     }
+  }
 
+  useEffect(() => {
     fetchStandings()
   }, [])
 

@@ -536,3 +536,65 @@ export async function GET() {
     note: 'Make sure to set SEED_SECRET_KEY environment variable in Vercel for security.'
   });
 } 
+
+// Helper function to recalculate team statistics from scratch
+async function recalculateTeamStats(teamId: string) {
+  // Get all completed matches for this team
+  const completedMatches = await prisma.match.findMany({
+    where: {
+      OR: [
+        { homeTeamId: teamId },
+        { awayTeamId: teamId }
+      ],
+      status: 'COMPLETED'
+    },
+    select: {
+      homeTeamId: true,
+      awayTeamId: true,
+      homeGamesWon: true,
+      awayGamesWon: true,
+      homeScore: true,
+      awayScore: true
+    }
+  })
+
+  // Calculate new statistics
+  let matchesPlayed = 0
+  let wins = 0
+  let losses = 0
+  let points = 0
+  let pointsAgainst = 0
+
+  for (const match of completedMatches) {
+    matchesPlayed++
+    
+    const isHomeTeam = match.homeTeamId === teamId
+    const teamGamesWon = isHomeTeam ? match.homeGamesWon : match.awayGamesWon
+    const opponentGamesWon = isHomeTeam ? match.awayGamesWon : match.homeGamesWon
+    const teamPoints = isHomeTeam ? match.homeScore : match.awayScore
+    const opponentPoints = isHomeTeam ? match.awayScore : match.homeScore
+
+    if (teamGamesWon > opponentGamesWon) {
+      wins++
+    } else {
+      losses++
+    }
+
+    points += teamPoints || 0
+    pointsAgainst += opponentPoints || 0
+  }
+
+  // Update team statistics
+  await prisma.team.update({
+    where: { id: teamId },
+    data: {
+      matchesPlayed,
+      wins,
+      losses,
+      points,
+      pointsAgainst,
+    },
+  })
+
+  console.log(`Recalculated stats for team ${teamId}: ${wins}W-${losses}L, ${points}PF-${pointsAgainst}PA`)
+} 

@@ -15,7 +15,8 @@ import {
   Crown,
   RotateCcw,
   Zap,
-  CheckCircle
+  CheckCircle,
+  RefreshCw
 } from 'lucide-react'
 import QuarterFinalSelection from './QuarterFinalSelection'
 
@@ -382,18 +383,35 @@ const AdminDashboard = () => {
   const handleEditMatch = (match: Match) => {
     setEditingMatch(match.id)
     
-    // Initialize games based on format
-    const maxGames = match.format === 'BO5' ? 5 : 3
-    const initialGames = []
+    // Initialize games based on existing games with scores, not just format
+    // This allows for reducing the number of games if needed
+    const existingGamesWithScores = match.games.filter(g => 
+      g.homeScore !== undefined && g.awayScore !== undefined && 
+      g.homeScore !== null && g.awayScore !== null
+    )
     
-    for (let i = 1; i <= maxGames; i++) {
-      const existingGame = match.games.find(g => g.gameNumber === i)
-      initialGames.push({
-        gameNumber: i,
-        homeScore: existingGame?.homeScore?.toString() || '',
-        awayScore: existingGame?.awayScore?.toString() || '',
-        status: existingGame?.status || 'SCHEDULED' as Game['status']
-      })
+    let initialGames = []
+    
+    if (existingGamesWithScores.length > 0) {
+      // Use existing games with scores
+      initialGames = existingGamesWithScores.map(game => ({
+        gameNumber: game.gameNumber,
+        homeScore: game.homeScore.toString(),
+        awayScore: game.awayScore.toString(),
+        status: game.status
+      }))
+    } else {
+      // Fallback to format-based initialization
+      const maxGames = match.format === 'BO5' ? 5 : 3
+      for (let i = 1; i <= maxGames; i++) {
+        const existingGame = match.games.find(g => g.gameNumber === i)
+        initialGames.push({
+          gameNumber: i,
+          homeScore: existingGame?.homeScore?.toString() || '',
+          awayScore: existingGame?.awayScore?.toString() || '',
+          status: existingGame?.status || 'SCHEDULED' as Game['status']
+        })
+      }
     }
     
     // Format date and time for input fields
@@ -413,7 +431,7 @@ const AdminDashboard = () => {
 
   const handleSaveMatch = async (matchId: string) => {
     try {
-      // Prepare games data
+      // Prepare games data - only include games that have both scores filled
       const gamesData = editForm.games
         .filter(game => game.homeScore !== '' && game.awayScore !== '')
         .map(game => ({
@@ -442,12 +460,17 @@ const AdminDashboard = () => {
       if (response.ok) {
         await fetchMatches() // Refresh the matches
         setEditingMatch(null)
+        setNotification({ type: 'success', message: 'Match updated successfully!' })
+        setTimeout(() => setNotification(null), 3000)
       } else {
-        alert('Failed to update match')
+        const errorData = await response.json()
+        setNotification({ type: 'error', message: `Failed to update match: ${errorData.error || 'Unknown error'}` })
+        setTimeout(() => setNotification(null), 5000)
       }
     } catch (error) {
       console.error('Error updating match:', error)
-      alert('Error updating match')
+      setNotification({ type: 'error', message: 'Error updating match' })
+      setTimeout(() => setNotification(null), 5000)
     }
   }
 
@@ -472,6 +495,51 @@ const AdminDashboard = () => {
           : game
       )
     }))
+  }
+
+  const removeGame = (gameNumber: number) => {
+    setEditForm(prev => ({
+      ...prev,
+      games: prev.games.filter(game => game.gameNumber !== gameNumber)
+    }))
+  }
+
+  const addGame = () => {
+    const maxGameNumber = Math.max(...editForm.games.map(g => g.gameNumber), 0)
+    setEditForm(prev => ({
+      ...prev,
+      games: [...prev.games, {
+        gameNumber: maxGameNumber + 1,
+        homeScore: '',
+        awayScore: '',
+        status: 'SCHEDULED' as Game['status']
+      }]
+    }))
+  }
+
+  const recalculateAllTeamStats = async () => {
+    try {
+      const response = await fetch('/api/tournament/recalculate-stats', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        setNotification({ type: 'success', message: `Successfully recalculated statistics for ${result.teamsCount} teams!` })
+        setTimeout(() => setNotification(null), 5000)
+      } else {
+        const errorData = await response.json()
+        setNotification({ type: 'error', message: `Failed to recalculate statistics: ${errorData.error || 'Unknown error'}` })
+        setTimeout(() => setNotification(null), 5000)
+      }
+    } catch (error) {
+      console.error('Error recalculating team statistics:', error)
+      setNotification({ type: 'error', message: 'Error recalculating team statistics' })
+      setTimeout(() => setNotification(null), 5000)
+    }
   }
 
   const formatMatchResult = (match: Match) => {
@@ -723,6 +791,13 @@ const AdminDashboard = () => {
               >
                 <RotateCcw className="w-4 h-4" />
                 Reset All Results
+              </button>
+              <button
+                onClick={recalculateAllTeamStats}
+                className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Recalculate Team Stats
               </button>
             </div>
 
@@ -1143,8 +1218,22 @@ const AdminDashboard = () => {
                                   min="0"
                                   max="30"
                                 />
+                                <button
+                                  onClick={() => removeGame(game.gameNumber)}
+                                  className="text-red-500 hover:text-red-700 text-xs px-1"
+                                  title="Remove game"
+                                >
+                                  ×
+                                </button>
                               </div>
                             ))}
+                            <button
+                              onClick={addGame}
+                              className="text-blue-500 hover:text-blue-700 text-xs px-2 py-1 border border-blue-300 rounded"
+                              title="Add game"
+                            >
+                              + Add Game
+                            </button>
                           </div>
                         ) : (
                           <div className="text-xs">

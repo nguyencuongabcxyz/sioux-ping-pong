@@ -50,6 +50,18 @@ export async function PATCH(
     }
     // Handle new table tennis format (games)
     else if (games && Array.isArray(games)) {
+      // First, delete any games that are not in the new games array
+      // This handles the case where we want to reduce the number of games
+      const newGameNumbers = games.map(g => g.gameNumber)
+      await prisma.game.deleteMany({
+        where: {
+          matchId: matchId,
+          gameNumber: {
+            notIn: newGameNumbers
+          }
+        }
+      })
+
       // Update or create games
       for (const gameData of games) {
         await prisma.game.upsert({
@@ -128,66 +140,41 @@ export async function PATCH(
       },
     })
 
-    // Update team stats if match was completed
-    if (updateData.status === 'COMPLETED' && currentMatch.status !== 'COMPLETED') {
-      const homeWins = (updatedMatch.homeGamesWon || 0) > (updatedMatch.awayGamesWon || 0) ||
-                      (updatedMatch.homeScore || 0) > (updatedMatch.awayScore || 0)
-      
-      // Update home team stats
-      await prisma.team.update({
-        where: { id: currentMatch.homeTeamId },
-        data: {
-          matchesPlayed: { increment: 1 },
-          wins: homeWins ? { increment: 1 } : undefined,
-          losses: homeWins ? undefined : { increment: 1 },
-          points: { increment: updatedMatch.homeScore || 0 },
-          pointsAgainst: { increment: updatedMatch.awayScore || 0 },
-        },
+    // Recalculate team statistics for both teams involved in this match
+    // This ensures that any changes to the match result are properly reflected
+    await recalculateTeamStats(currentMatch.homeTeamId)
+    await recalculateTeamStats(currentMatch.awayTeamId)
+
+    // Check if this was a group stage match and if all group stage matches are now completed
+    if (currentMatch.matchType === 'GROUP_STAGE') {
+      const incompleteGroupMatches = await prisma.match.count({
+        where: {
+          matchType: 'GROUP_STAGE',
+          status: { not: 'COMPLETED' }
+        }
       })
 
-      // Update away team stats
-      await prisma.team.update({
-        where: { id: currentMatch.awayTeamId },
-        data: {
-          matchesPlayed: { increment: 1 },
-          wins: homeWins ? undefined : { increment: 1 },
-          losses: homeWins ? { increment: 1 } : undefined,
-          points: { increment: updatedMatch.awayScore || 0 },
-          pointsAgainst: { increment: updatedMatch.homeScore || 0 },
-        },
-      })
+      console.log(`Match ${matchId} completed. ${incompleteGroupMatches} group stage matches remaining`)
 
-      // Check if this was a group stage match and if all group stage matches are now completed
-      if (currentMatch.matchType === 'GROUP_STAGE') {
-        const incompleteGroupMatches = await prisma.match.count({
-          where: {
-            matchType: 'GROUP_STAGE',
-            status: { not: 'COMPLETED' }
+      // If all group stage matches are completed, mark group stage as completed
+      if (incompleteGroupMatches === 0) {
+        console.log('All group stage matches completed! Marking group stage as completed...')
+        try {
+          const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/tournament/check-group-completion`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          })
+
+          if (response.ok) {
+            const result = await response.json()
+            console.log('Group completion result:', result)
+          } else {
+            console.error('Failed to mark group stage as completed')
           }
-        })
-
-        console.log(`Match ${matchId} completed. ${incompleteGroupMatches} group stage matches remaining`)
-
-        // If all group stage matches are completed, mark group stage as completed
-        if (incompleteGroupMatches === 0) {
-          console.log('All group stage matches completed! Marking group stage as completed...')
-          try {
-            const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/tournament/check-group-completion`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-            })
-
-            if (response.ok) {
-              const result = await response.json()
-              console.log('Group completion result:', result)
-            } else {
-              console.error('Failed to mark group stage as completed')
-            }
-          } catch (error) {
-            console.error('Error calling group completion check:', error)
-          }
+        } catch (error) {
+          console.error('Error calling group completion check:', error)
         }
       }
     }
@@ -200,4 +187,66 @@ export async function PATCH(
       { status: 500 }
     )
   }
+}
+
+// Helper function to recalculate team statistics from scratch
+async function recalculateTeamStats(teamId: string) {
+  // Get all completed matches for this team
+  const completedMatches = await prisma.match.findMany({
+    where: {
+      OR: [
+        { homeTeamId: teamId },
+        { awayTeamId: teamId }
+      ],
+      status: 'COMPLETED'
+    },
+    select: {
+      homeTeamId: true,
+      awayTeamId: true,
+      homeGamesWon: true,
+      awayGamesWon: true,
+      homeScore: true,
+      awayScore: true
+    }
+  })
+
+  // Calculate new statistics
+  let matchesPlayed = 0
+  let wins = 0
+  let losses = 0
+  let points = 0
+  let pointsAgainst = 0
+
+  for (const match of completedMatches) {
+    matchesPlayed++
+    
+    const isHomeTeam = match.homeTeamId === teamId
+    const teamGamesWon = isHomeTeam ? match.homeGamesWon : match.awayGamesWon
+    const opponentGamesWon = isHomeTeam ? match.awayGamesWon : match.homeGamesWon
+    const teamPoints = isHomeTeam ? match.homeScore : match.awayScore
+    const opponentPoints = isHomeTeam ? match.awayScore : match.homeScore
+
+    if (teamGamesWon > opponentGamesWon) {
+      wins++
+    } else {
+      losses++
+    }
+
+    points += teamPoints || 0
+    pointsAgainst += opponentPoints || 0
+  }
+
+  // Update team statistics
+  await prisma.team.update({
+    where: { id: teamId },
+    data: {
+      matchesPlayed,
+      wins,
+      losses,
+      points,
+      pointsAgainst,
+    },
+  })
+
+  console.log(`Recalculated stats for team ${teamId}: ${wins}W-${losses}L, ${points}PF-${pointsAgainst}PA`)
 }
