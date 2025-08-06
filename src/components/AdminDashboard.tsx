@@ -556,7 +556,8 @@ const AdminDashboard = () => {
       hour12: true,
     }
     
-    // Use the browser's local timezone for display
+    // Display the time as stored, without timezone conversion
+    // This ensures the same display in local and production environments
     return date.toLocaleString('en-US', options)
   }
 
