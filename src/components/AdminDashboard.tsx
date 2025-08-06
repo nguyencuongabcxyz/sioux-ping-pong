@@ -542,6 +542,60 @@ const AdminDashboard = () => {
     }
   }
 
+  const fixTimezoneIssues = async () => {
+    try {
+      const response = await fetch('/api/tournament/fix-timezones', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        setNotification({ type: 'success', message: `Fixed timezone issues for ${result.fixedCount} matches!` })
+        setTimeout(() => setNotification(null), 5000)
+        // Refresh matches to show the updated times
+        await fetchMatches()
+      } else {
+        const errorData = await response.json()
+        setNotification({ type: 'error', message: `Failed to fix timezone issues: ${errorData.error || 'Unknown error'}` })
+        setTimeout(() => setNotification(null), 5000)
+      }
+    } catch (error) {
+      console.error('Error fixing timezone issues:', error)
+      setNotification({ type: 'error', message: 'Error fixing timezone issues' })
+      setTimeout(() => setNotification(null), 5000)
+    }
+  }
+
+  const regenerateMatchTimes = async () => {
+    try {
+      const response = await fetch('/api/tournament/regenerate-match-times', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        setNotification({ type: 'success', message: `Regenerated times for ${result.updatedCount} matches!` })
+        setTimeout(() => setNotification(null), 5000)
+        // Refresh matches to show the updated times
+        await fetchMatches()
+      } else {
+        const errorData = await response.json()
+        setNotification({ type: 'error', message: `Failed to regenerate match times: ${errorData.error || 'Unknown error'}` })
+        setTimeout(() => setNotification(null), 5000)
+      }
+    } catch (error) {
+      console.error('Error regenerating match times:', error)
+      setNotification({ type: 'error', message: 'Error regenerating match times' })
+      setTimeout(() => setNotification(null), 5000)
+    }
+  }
+
   const formatMatchResult = (match: Match) => {
     if (match.games.length === 0) {
       return match.homeScore !== undefined && match.awayScore !== undefined
@@ -798,6 +852,20 @@ const AdminDashboard = () => {
               >
                 <RefreshCw className="w-4 h-4" />
                 Recalculate Team Stats
+              </button>
+              <button
+                onClick={fixTimezoneIssues}
+                className="bg-yellow-600 text-white px-6 py-3 rounded-lg hover:bg-yellow-700 transition-colors flex items-center gap-2"
+              >
+                <Calendar className="w-4 h-4" />
+                Fix Timezone Issues
+              </button>
+              <button
+                onClick={regenerateMatchTimes}
+                className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Regenerate Match Times
               </button>
             </div>
 
