@@ -154,6 +154,8 @@ export async function POST(request: NextRequest) {
 
   // Clear existing group stage matches before creating new ones
   console.log('Clearing existing group stage matches...');
+  
+  // Delete all games first (due to foreign key constraints)
   await prisma.game.deleteMany({
     where: {
       match: {
@@ -162,13 +164,25 @@ export async function POST(request: NextRequest) {
     }
   });
   
+  // Delete all group stage matches
   await prisma.match.deleteMany({
     where: {
       matchType: 'GROUP_STAGE'
     }
   });
   
-  console.log('Existing group stage matches cleared');
+  // Reset team statistics
+  await prisma.team.updateMany({
+    data: {
+      matchesPlayed: 0,
+      wins: 0,
+      losses: 0,
+      points: 0,
+      pointsAgainst: 0
+    }
+  });
+  
+  console.log('Existing group stage matches and team stats cleared');
 
       // Create teams
   const teams = [];

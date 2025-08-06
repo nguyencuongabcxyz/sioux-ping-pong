@@ -122,6 +122,7 @@ const MatchSchedules = () => {
       hour: 'numeric',
       minute: '2-digit',
       hour12: true,
+      timeZone: 'UTC' // Force UTC interpretation to match how we stored it
     })
   }
 
