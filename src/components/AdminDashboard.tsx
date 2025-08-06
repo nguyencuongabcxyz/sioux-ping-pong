@@ -14,7 +14,8 @@ import {
   Target,
   Crown,
   RotateCcw,
-  Zap
+  Zap,
+  CheckCircle
 } from 'lucide-react'
 import QuarterFinalSelection from './QuarterFinalSelection'
 
@@ -294,6 +295,27 @@ const AdminDashboard = () => {
     }
   }
 
+  const ensureBO3GroupMatches = async () => {
+    if (!confirm('This will ensure all group stage matches are in BO3 format.\n\nThis will update any group stage matches that might not be in BO3 format.\n\nContinue?')) {
+      return
+    }
+
+    try {
+      const response = await fetch('/api/tournament/ensure-bo3-group-matches', { method: 'POST' })
+      if (response.ok) {
+        const data = await response.json()
+        await fetchMatches() // Refresh to show updated matches
+        alert(data.message)
+      } else {
+        const errorData = await response.json()
+        alert(`Error: ${errorData.error}`)
+      }
+    } catch (error) {
+      console.error('Error ensuring BO3 format:', error)
+      alert('Failed to ensure BO3 format for group stage matches')
+    }
+  }
+
   const handleEditMatch = (match: Match) => {
     setEditingMatch(match.id)
     
@@ -522,6 +544,13 @@ const AdminDashboard = () => {
                   Regenerate Knockout
                 </button>
               )}
+              <button
+                onClick={ensureBO3GroupMatches}
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+              >
+                <CheckCircle className="w-4 h-4" />
+                Ensure BO3 Format
+              </button>
               <button
                 onClick={fillGroupStageResults}
                 className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
