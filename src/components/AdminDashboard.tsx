@@ -554,10 +554,10 @@ const AdminDashboard = () => {
       hour: 'numeric',
       minute: '2-digit',
       hour12: true,
+      timeZone: 'UTC' // Force UTC interpretation to match how we stored it
     }
     
-    // Display the time as stored, without timezone conversion
-    // This ensures the same display in local and production environments
+    // Display the time as stored in UTC, ensuring consistent display
     return date.toLocaleString('en-US', options)
   }
 

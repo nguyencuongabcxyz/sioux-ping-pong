@@ -335,9 +335,9 @@ export async function POST(request: NextRequest) {
         teamsPlayedPerDay[dateKey].add(match.home.id);
         teamsPlayedPerDay[dateKey].add(match.away.id);
         
-        // Create the date using the exact time values intended
-        // This ensures the time displays as 12:30 PM, 12:50 PM, 5:30 PM regardless of environment
-        const matchDateTime = new Date(2025, 7, scheduleDay.date, matchSchedule.time.hour, matchSchedule.time.minute, 0, 0);
+        // Create the date treating the times as if they're in UTC
+        // This ensures consistent display across all environments
+        const matchDateTime = new Date(Date.UTC(2025, 7, scheduleDay.date, matchSchedule.time.hour, matchSchedule.time.minute, 0, 0));
 
         await prisma.match.create({
           data: {
