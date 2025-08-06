@@ -95,7 +95,7 @@ export default function RulesPage() {
             </div>
             <div className="bg-purple-50 border border-purple-200 rounded-md p-3 mt-4">
               <p className="text-purple-800 font-semibold">
-                🎥 <strong>Video Coverage:</strong> All knockout stage matches will be recorded and made available on the organizer's channel for transparency and review purposes.
+                🎥 <strong>Video Coverage:</strong> All knockout stage matches will be recorded and made available on the organizer&apos;s channel for transparency and review purposes.
               </p>
             </div>
           </div>
