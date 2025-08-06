@@ -59,16 +59,7 @@ const TournamentStandings = () => {
     }
 
     fetchStandings()
-
-    // Set up polling to check for knockout generation or group completion every 5 seconds
-    const interval = setInterval(() => {
-      if (!standingsData?.knockoutGenerated && !standingsData?.groupStageCompleted) {
-        fetchStandings()
-      }
-    }, 5000)
-
-    return () => clearInterval(interval)
-  }, [standingsData?.knockoutGenerated])
+  }, [])
 
   if (loading) {
     return (
