@@ -73,7 +73,7 @@ const TournamentStandings = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2" style={{ borderColor: '#F15D03' }}></div>
       </div>
     )
   }
@@ -87,10 +87,11 @@ const TournamentStandings = () => {
   }
 
   return (
-    <div className="space-y-8">
-      {standingsData?.tables.map((table, tableIndex) => (
+    <div className="flex flex-col lg:flex-row gap-8">
+      <div className="flex-1 space-y-8">
+        {standingsData?.tables.map((table, tableIndex) => (
         <div key={table.id} className="bg-white rounded-lg shadow-lg overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+          <div className="px-6 py-4" style={{ background: 'linear-gradient(to right, #82589F, #6B4E7A)' }}>
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
               <Trophy className="w-5 h-5" />
               {table.name}
@@ -277,29 +278,33 @@ const TournamentStandings = () => {
           </p>
         </div>
       )}
-      
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
-        <div>
-          <h3 className="text-sm font-medium text-blue-800 mb-2">🏆 Ranking System</h3>
-          <div className="text-xs text-blue-700 space-y-1">
-            <div><strong>1.</strong> Tournament Points (Win = 1 point, Loss = 0 points)</div>
-            <div><strong>2.</strong> Head-to-Head Result (if tied)</div>
-            <div><strong>3.</strong> Game Difference (Wins - Losses)</div>
-            <div><strong>4.</strong> Point Difference (Points Scored - Points Conceded)</div>
+      </div>
+
+      {/* Side Legend */}
+      <div className="lg:w-80 lg:h-screen lg:sticky lg:top-16 space-y-4">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3 h-full">
+          <div>
+            <h3 className="text-sm font-medium text-blue-800 mb-2">🏆 Ranking System</h3>
+            <div className="text-xs text-blue-700 space-y-1">
+              <div><strong>1.</strong> Tournament Points (Win = 1 point, Loss = 0 points)</div>
+              <div><strong>2.</strong> Head-to-Head Result (if tied)</div>
+              <div><strong>3.</strong> Game Difference (Wins - Losses)</div>
+              <div><strong>4.</strong> Point Difference (Points Scored - Points Conceded)</div>
+            </div>
           </div>
-        </div>
-        
-        <div>
-          <h3 className="text-sm font-medium text-blue-800 mb-2">📊 Column Legend</h3>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-xs text-blue-700">
-            <div><strong>Pts:</strong> Tournament Points</div>
-            <div><strong>MP:</strong> Matches Played</div>
-            <div><strong>W:</strong> Wins</div>
-            <div><strong>L:</strong> Losses</div>
-            <div><strong>GD:</strong> Game Difference</div>
-            <div><strong>PF:</strong> Points For</div>
-            <div><strong>PA:</strong> Points Against</div>
-            <div><strong>PD:</strong> Point Difference</div>
+          
+          <div>
+            <h3 className="text-sm font-medium text-blue-800 mb-2">📊 Column Legend</h3>
+            <div className="grid grid-cols-1 gap-2 text-xs text-blue-700">
+              <div><strong>Pts:</strong> Tournament Points</div>
+              <div><strong>MP:</strong> Matches Played</div>
+              <div><strong>W:</strong> Wins</div>
+              <div><strong>L:</strong> Losses</div>
+              <div><strong>GD:</strong> Game Difference</div>
+              <div><strong>PF:</strong> Points For</div>
+              <div><strong>PA:</strong> Points Against</div>
+              <div><strong>PD:</strong> Point Difference</div>
+            </div>
           </div>
         </div>
       </div>

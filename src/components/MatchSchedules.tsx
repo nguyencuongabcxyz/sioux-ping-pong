@@ -114,14 +114,17 @@ const MatchSchedules = () => {
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       SCHEDULED: { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Scheduled' },
-      IN_PROGRESS: { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Live' },
+      IN_PROGRESS: { bg: '', text: 'text-white', label: 'Live', customBg: '#F15D03' },
       COMPLETED: { bg: 'bg-green-100', text: 'text-green-800', label: 'Final' },
       CANCELLED: { bg: 'bg-red-100', text: 'text-red-800', label: 'Cancelled' },
     }
     
     const config = statusConfig[status as keyof typeof statusConfig]
     return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.bg} ${config.text}`}>
+      <span 
+        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.bg} ${config.text}`}
+        style={config.customBg ? { backgroundColor: config.customBg } : {}}
+      >
         {config.label}
       </span>
     )

@@ -228,8 +228,8 @@ const BracketPage = () => {
     <div className="space-y-8">
       {/* Header */}
       <div className="text-center">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center justify-center gap-2">
-          <Trophy className="w-8 h-8 text-yellow-500" />
+        <h1 className="text-3xl font-bold mb-2 flex items-center justify-center gap-2" style={{ color: '#F15D03' }}>
+          <Trophy className="w-8 h-8" style={{ color: '#F15D03' }} />
           Tournament Bracket
         </h1>
         <p className="text-gray-600">

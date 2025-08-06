@@ -572,12 +572,12 @@ const AdminDashboard = () => {
       {/* Header Actions */}
       <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4">
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
-          <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+          <button className="text-white px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2" style={{ backgroundColor: '#F15D03' }}>
             <Calendar className="w-4 h-4" />
             <span className="hidden sm:inline">Schedule Match</span>
             <span className="sm:hidden">Schedule</span>
           </button>
-          <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2">
+          <button className="text-white px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2" style={{ backgroundColor: '#F15D03' }}>
             <Trophy className="w-4 h-4" />
             <span className="hidden sm:inline">Update Rankings</span>
             <span className="sm:hidden">Rankings</span>
