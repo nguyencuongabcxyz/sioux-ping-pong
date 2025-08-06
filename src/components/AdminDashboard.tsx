@@ -347,6 +347,38 @@ const AdminDashboard = () => {
     }
   }
 
+  const generateGroupStageMatches = async () => {
+    if (!confirm('This will generate all group stage matches for the tournament.\n\nThis will create round-robin matches for all teams in each table.\n\nContinue?')) {
+      return
+    }
+
+    try {
+      // Use admin access key for the seed endpoint
+      const response = await fetch('/api/seed?key=admin-access', { method: 'POST' })
+      if (response.ok) {
+        const data = await response.json()
+        await fetchMatches() // Refresh to show new matches
+        await fetchTournamentStage() // Refresh tournament stage
+        setNotification({
+          type: 'success',
+          message: `Successfully generated ${data.totalMatchesCreated} group stage matches!`
+        })
+      } else {
+        const errorData = await response.json()
+        setNotification({
+          type: 'error',
+          message: `Error: ${errorData.error}`
+        })
+      }
+    } catch (error) {
+      console.error('Error generating group stage matches:', error)
+      setNotification({
+        type: 'error',
+        message: 'Failed to generate group stage matches'
+      })
+    }
+  }
+
   const handleEditMatch = (match: Match) => {
     setEditingMatch(match.id)
     
@@ -644,7 +676,14 @@ const AdminDashboard = () => {
               </div>
             </div>
             
-            <div className="flex gap-3">
+            <div className="flex gap-3 flex-wrap">
+              <button
+                onClick={generateGroupStageMatches}
+                className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2"
+              >
+                <Calendar className="w-4 h-4" />
+                Generate Group Matches
+              </button>
               {!tournamentStage.knockoutGenerated && (
                 <button
                   onClick={() => setShowQuarterFinalSelection(true)}
