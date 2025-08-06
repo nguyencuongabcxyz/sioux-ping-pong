@@ -317,11 +317,20 @@ async function main() {
         teamsPlayedPerDay[dateKey].add(match.home.id)
         teamsPlayedPerDay[dateKey].add(match.away.id)
         
-        // Create the date treating the times as local time, then convert to UTC for storage
-        // This matches the approach used in the admin interface
-        const matchDate = new Date(2025, 7, scheduleDay.date) // August 2025 (month is 0-indexed)
-        matchDate.setHours(matchSchedule.time.hour, matchSchedule.time.minute, 0, 0)
-        const matchDateTime = matchDate.toISOString() // Convert to UTC for storage
+        // Create the date explicitly in Vietnam timezone (UTC+7)
+        // This ensures consistency between local and Vercel deployments
+        const year = 2025
+        const month = 7 // August (0-indexed)
+        const day = scheduleDay.date
+        const hour = matchSchedule.time.hour
+        const minute = matchSchedule.time.minute
+        
+        // Create a date string in Vietnam timezone
+        const vietnamDateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00.000+07:00`
+        
+        // Convert to UTC for storage
+        const vietnamDate = new Date(vietnamDateString)
+        const matchDateTime = vietnamDate.toISOString()
 
         await prisma.match.create({
           data: {
@@ -336,6 +345,8 @@ async function main() {
         })
         
         console.log(`Created match: ${match.home.name} vs ${match.away.name} at ${new Date(matchDateTime).toLocaleString()}`)
+        console.log(`  Vietnam time: ${vietnamDateString}`)
+        console.log(`  UTC storage: ${matchDateTime}`)
         
         // Move to next match for this table
         tableMatchIndex[table.id]++

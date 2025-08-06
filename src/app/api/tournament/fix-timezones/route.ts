@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma'
 
 export async function POST() {
   try {
+    console.log('Starting comprehensive timezone fix process...')
+    
     // Get all matches that might have timezone issues
     const matches = await prisma.match.findMany({
       where: {
@@ -14,26 +16,39 @@ export async function POST() {
       }
     })
 
+    console.log(`Found ${matches.length} matches to check`)
+
     let fixedCount = 0
+    let checkedCount = 0
+
+    // Define the expected schedule pattern
+    const expectedTimes = [
+      { hour: 12, minute: 30 }, // 12:30 PM
+      { hour: 12, minute: 50 }, // 12:50 PM
+      { hour: 17, minute: 30 }, // 5:30 PM
+      { hour: 17, minute: 50 }, // 5:50 PM
+    ]
 
     for (const match of matches) {
+      checkedCount++
       const currentDate = new Date(match.scheduledAt)
       
-      // Check if this looks like it was generated with the old UTC approach
-      // The old approach used Date.UTC() which created times like:
-      // - 12:30 PM became 12:30 UTC (which displays as 5:30 AM in some timezones)
-      // - 5:30 PM became 17:30 UTC (which displays as 10:30 AM in some timezones)
+      console.log(`\nChecking match ${match.id}:`)
+      console.log(`  Original: ${currentDate.toISOString()}`)
+      console.log(`  Display: ${currentDate.toLocaleString()}`)
       
       // Get the UTC hours to see if this looks like a timezone-shifted time
       const utcHours = currentDate.getUTCHours()
       const utcMinutes = currentDate.getUTCMinutes()
       
+      console.log(`  UTC time: ${utcHours}:${utcMinutes.toString().padStart(2, '0')}`)
+      
       // Check if this looks like a time that was meant to be local but is stored as UTC
-      // Common patterns: 12:30, 12:50, 17:30, 17:50 (the original intended times)
-      const isLikelyTimezoneShifted = (
-        (utcHours === 12 && (utcMinutes === 30 || utcMinutes === 50)) ||
-        (utcHours === 17 && (utcMinutes === 30 || utcMinutes === 50))
+      const isLikelyTimezoneShifted = expectedTimes.some(expected => 
+        utcHours === expected.hour && utcMinutes === expected.minute
       )
+      
+      console.log(`  Is likely timezone shifted: ${isLikelyTimezoneShifted}`)
       
       if (isLikelyTimezoneShifted) {
         // This was likely generated with the old UTC approach
@@ -48,6 +63,9 @@ export async function POST() {
         const localDate = new Date(year, month, day, hour, minute, 0, 0)
         const newScheduledAt = localDate.toISOString()
         
+        console.log(`  Converting: ${currentDate.toISOString()} -> ${newScheduledAt}`)
+        console.log(`  Display: ${currentDate.toLocaleString()} -> ${new Date(newScheduledAt).toLocaleString()}`)
+        
         // Update the match
         await prisma.match.update({
           where: { id: match.id },
@@ -55,19 +73,24 @@ export async function POST() {
         })
         
         fixedCount++
-        console.log(`Fixed match ${match.id}: ${currentDate.toISOString()} (${currentDate.toLocaleString()}) -> ${newScheduledAt} (${new Date(newScheduledAt).toLocaleString()})`)
+        console.log(`  Fixed match ${match.id}`)
+      } else {
+        console.log(`  No fix needed for match ${match.id}`)
       }
     }
+
+    console.log(`\nProcessed ${checkedCount} matches, fixed ${fixedCount} matches`)
 
     return NextResponse.json({ 
       message: `Fixed timezone issues for ${fixedCount} matches`,
       fixedCount,
-      totalMatches: matches.length
+      totalMatches: matches.length,
+      checkedCount
     })
   } catch (error) {
     console.error('Error fixing timezones:', error)
     return NextResponse.json(
-      { error: 'Failed to fix timezone issues' },
+      { error: 'Failed to fix timezone issues', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }

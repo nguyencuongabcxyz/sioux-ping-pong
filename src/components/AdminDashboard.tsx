@@ -544,6 +544,9 @@ const AdminDashboard = () => {
 
   const fixTimezoneIssues = async () => {
     try {
+      console.log('Starting timezone fix...')
+      setNotification({ type: 'info', message: 'Fixing timezone issues...' })
+      
       const response = await fetch('/api/tournament/fix-timezones', {
         method: 'POST',
         headers: {
@@ -551,26 +554,33 @@ const AdminDashboard = () => {
         },
       })
 
+      console.log('Response status:', response.status)
+      
       if (response.ok) {
         const result = await response.json()
+        console.log('Fix result:', result)
         setNotification({ type: 'success', message: `Fixed timezone issues for ${result.fixedCount} matches!` })
         setTimeout(() => setNotification(null), 5000)
         // Refresh matches to show the updated times
         await fetchMatches()
       } else {
         const errorData = await response.json()
+        console.error('Fix error:', errorData)
         setNotification({ type: 'error', message: `Failed to fix timezone issues: ${errorData.error || 'Unknown error'}` })
         setTimeout(() => setNotification(null), 5000)
       }
     } catch (error) {
       console.error('Error fixing timezone issues:', error)
-      setNotification({ type: 'error', message: 'Error fixing timezone issues' })
+      setNotification({ type: 'error', message: `Error fixing timezone issues: ${error instanceof Error ? error.message : 'Unknown error'}` })
       setTimeout(() => setNotification(null), 5000)
     }
   }
 
   const regenerateMatchTimes = async () => {
     try {
+      console.log('Starting match time regeneration...')
+      setNotification({ type: 'info', message: 'Regenerating match times...' })
+      
       const response = await fetch('/api/tournament/regenerate-match-times', {
         method: 'POST',
         headers: {
@@ -578,20 +588,87 @@ const AdminDashboard = () => {
         },
       })
 
+      console.log('Response status:', response.status)
+      
       if (response.ok) {
         const result = await response.json()
+        console.log('Regenerate result:', result)
         setNotification({ type: 'success', message: `Regenerated times for ${result.updatedCount} matches!` })
         setTimeout(() => setNotification(null), 5000)
         // Refresh matches to show the updated times
         await fetchMatches()
       } else {
         const errorData = await response.json()
+        console.error('Regenerate error:', errorData)
         setNotification({ type: 'error', message: `Failed to regenerate match times: ${errorData.error || 'Unknown error'}` })
         setTimeout(() => setNotification(null), 5000)
       }
     } catch (error) {
       console.error('Error regenerating match times:', error)
-      setNotification({ type: 'error', message: 'Error regenerating match times' })
+      setNotification({ type: 'error', message: `Error regenerating match times: ${error instanceof Error ? error.message : 'Unknown error'}` })
+      setTimeout(() => setNotification(null), 5000)
+    }
+  }
+
+  const testTimezone = async () => {
+    try {
+      console.log('Testing timezone...')
+      setNotification({ type: 'info', message: 'Testing timezone...' })
+      
+      const response = await fetch('/api/tournament/test-timezone', {
+        method: 'GET',
+      })
+
+      console.log('Test response status:', response.status)
+      
+      if (response.ok) {
+        const result = await response.json()
+        console.log('Test result:', result)
+        setNotification({ type: 'success', message: `Test completed! Check console for details.` })
+        setTimeout(() => setNotification(null), 5000)
+      } else {
+        const errorData = await response.json()
+        console.error('Test error:', errorData)
+        setNotification({ type: 'error', message: `Test failed: ${errorData.error || 'Unknown error'}` })
+        setTimeout(() => setNotification(null), 5000)
+      }
+    } catch (error) {
+      console.error('Error testing timezone:', error)
+      setNotification({ type: 'error', message: `Error testing timezone: ${error instanceof Error ? error.message : 'Unknown error'}` })
+      setTimeout(() => setNotification(null), 5000)
+    }
+  }
+
+  const forceFixTimes = async () => {
+    try {
+      console.log('Starting force fix...')
+      setNotification({ type: 'info', message: 'Force fixing all match times...' })
+      
+      const response = await fetch('/api/tournament/force-fix-times', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      console.log('Force fix response status:', response.status)
+      
+      if (response.ok) {
+        const result = await response.json()
+        console.log('Force fix result:', result)
+        setNotification({ type: 'success', message: `Force fixed times for ${result.fixedCount} matches!` })
+        setTimeout(() => setNotification(null), 5000)
+        // Refresh matches to show the updated times
+        await fetchMatches()
+      } else {
+        const errorData = await response.json()
+        console.error('Force fix error:', errorData)
+        setNotification({ type: 'error', message: `Failed to force fix times: ${errorData.error || 'Unknown error'}` })
+        setTimeout(() => setNotification(null), 5000)
+      }
+    } catch (error) {
+      console.error('Error force fixing times:', error)
+      setNotification({ type: 'error', message: `Error force fixing times: ${error instanceof Error ? error.message : 'Unknown error'}` })
       setTimeout(() => setNotification(null), 5000)
     }
   }
@@ -659,12 +736,18 @@ const AdminDashboard = () => {
     // Create a date object for the selected date
     const selectedDate = new Date(date)
     
-    // Set the time in the local timezone
-    selectedDate.setHours(hours, minutes, 0, 0)
+    // Set the time in Vietnam timezone (UTC+7)
+    // This ensures consistency between local and Vercel deployments
+    const year = selectedDate.getFullYear()
+    const month = selectedDate.getMonth()
+    const day = selectedDate.getDate()
     
-    // Convert to UTC for storage - this ensures consistent timezone handling
-    // across different deployments and browsers
-    return selectedDate.toISOString()
+    // Create a date string in Vietnam timezone
+    const vietnamDateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00.000+07:00`
+    
+    // Convert to UTC for storage
+    const vietnamDate = new Date(vietnamDateString)
+    return vietnamDate.toISOString()
   }
 
   // Helper function to format time for display (shows exactly what was selected)
@@ -866,6 +949,20 @@ const AdminDashboard = () => {
               >
                 <RotateCcw className="w-4 h-4" />
                 Regenerate Match Times
+              </button>
+              <button
+                onClick={testTimezone}
+                className="bg-teal-600 text-white px-6 py-3 rounded-lg hover:bg-teal-700 transition-colors flex items-center gap-2"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Test Timezone
+              </button>
+              <button
+                onClick={forceFixTimes}
+                className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Force Fix Times
               </button>
             </div>
 
