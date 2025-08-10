@@ -1,8 +1,16 @@
 'use client'
 
 import { Megaphone } from 'lucide-react'
+import { usePathname } from 'next/navigation'
 
 const AnnouncementBar = () => {
+  const pathname = usePathname()
+
+  // Hide announcement bar on the scoreboard page
+  if (pathname?.startsWith('/scoreboard')) {
+    return null
+  }
+
   return (
     <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white relative overflow-hidden">
       {/* Animated running text */}

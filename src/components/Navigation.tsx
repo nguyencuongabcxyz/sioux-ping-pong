@@ -3,11 +3,13 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { Trophy, Calendar, Menu, X, Target, BookOpen, Gift, DollarSign } from 'lucide-react'
+import { Trophy, Calendar, Menu, X, Target, BookOpen, Gift, DollarSign, BarChart3 } from 'lucide-react'
+import { useSession } from 'next-auth/react'
 
 const Navigation = () => {
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const { data: session } = useSession()
 
   const navItems = [
     {
@@ -39,6 +41,15 @@ const Navigation = () => {
       name: 'Sioux88',
       href: '/sioux88',
       icon: DollarSign,
+    },
+  ]
+
+  // Admin-only navigation items
+  const adminNavItems = [
+    {
+      name: 'Scoreboard',
+      href: '/scoreboard',
+      icon: BarChart3,
     },
   ]
 
@@ -79,6 +90,34 @@ const Navigation = () => {
                   </Link>
                 )
               })}
+              
+              {/* Admin Navigation Items */}
+              {session && (
+                <>
+                  <div className="border-l border-gray-300 h-6 mx-2"></div>
+                  {adminNavItems.map((item) => {
+                    const Icon = item.icon
+                    const isActive = pathname === item.href
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={`px-2 lg:px-3 py-2 rounded-md text-sm font-medium flex items-center space-x-1 lg:space-x-2 transition-colors ${
+                          isActive
+                            ? 'text-white'
+                            : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                        }`}
+                        style={{
+                          backgroundColor: isActive ? '#F15D03' : 'transparent'
+                        }}
+                      >
+                        <Icon className="w-4 h-4" />
+                        <span>{item.name}</span>
+                      </Link>
+                    )
+                  })}
+                </>
+              )}
             </div>
           </div>
 
@@ -123,6 +162,40 @@ const Navigation = () => {
                   </Link>
                 )
               })}
+              
+              {/* Admin Navigation Items */}
+              {session && (
+                <>
+                  <div className="border-t border-gray-200 my-2"></div>
+                  <div className="px-2 py-1">
+                    <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                      Admin
+                    </div>
+                  </div>
+                  {adminNavItems.map((item) => {
+                    const Icon = item.icon
+                    const isActive = pathname === item.href
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={`px-3 py-3 rounded-md text-base font-medium flex items-center space-x-3 transition-colors ${
+                          isActive
+                            ? 'text-white'
+                            : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                        }`}
+                        style={{
+                          backgroundColor: isActive ? '#F15D03' : 'transparent'
+                        }}
+                      >
+                        <Icon className="w-5 h-5" />
+                        <span>{item.name}</span>
+                      </Link>
+                    )
+                  })}
+                </>
+              )}
             </div>
           </div>
         )}
