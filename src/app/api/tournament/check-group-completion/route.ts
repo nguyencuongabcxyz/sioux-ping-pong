@@ -124,13 +124,32 @@ async function getQualifiedTeams() {
       teamGamesLost.set(match.awayTeamId, currentAwayLost + match.homeGamesWon)
     }
 
+    // Create head-to-head lookup map
+    const headToHeadMap = new Map<string, number>()
+    for (const match of tableMatches) {
+      const key = `${match.homeTeamId}-${match.awayTeamId}`
+      const reverseKey = `${match.awayTeamId}-${match.homeTeamId}`
+      
+      const homeWon = match.homeGamesWon > match.awayGamesWon
+      headToHeadMap.set(key, homeWon ? 1 : -1)
+      headToHeadMap.set(reverseKey, homeWon ? -1 : 1)
+    }
+
     const sortedTeams = table.teams.sort((a, b) => {
       // 1. Tournament Points (most wins)
       if (a.wins !== b.wins) {
         return b.wins - a.wins
       }
       
-      // 2. Game Difference (individual games won - games lost)
+      // 2. Head-to-Head Result (if tied)
+      const headToHeadKey = `${a.id}-${b.id}`
+      const headToHeadResult = headToHeadMap.get(headToHeadKey)
+      if (headToHeadResult !== undefined) {
+        if (headToHeadResult > 0) return -1  // Team A won head-to-head
+        if (headToHeadResult < 0) return 1   // Team B won head-to-head
+      }
+      
+      // 3. Game Difference (individual games won - games lost)
       const aGamesWon = teamGamesWon.get(a.id) || 0
       const aGamesLost = teamGamesLost.get(a.id) || 0
       const bGamesWon = teamGamesWon.get(b.id) || 0
@@ -142,14 +161,14 @@ async function getQualifiedTeams() {
         return bGameDiff - aGameDiff
       }
       
-      // 3. Point Difference (points scored - points conceded)
+      // 4. Point Difference (points scored - points conceded)
       const aPointDiff = a.points - a.pointsAgainst
       const bPointDiff = b.points - b.pointsAgainst
       if (aPointDiff !== bPointDiff) {
         return bPointDiff - aPointDiff
       }
       
-      // 4. Total points scored (tiebreaker)
+      // 5. Total points scored (tiebreaker)
       return b.points - a.points
     })
 
