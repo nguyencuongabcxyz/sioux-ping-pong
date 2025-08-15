@@ -148,12 +148,53 @@ async function getQualifiedTeams() {
         return b.wins - a.wins
       }
       
-      // 2. Head-to-Head Result (if tied)
-      const headToHeadKey = `${a.id}-${b.id}`
-      const headToHeadResult = headToHeadMap.get(headToHeadKey)
-      if (headToHeadResult !== undefined) {
-        if (headToHeadResult > 0) return -1  // Team A won head-to-head
-        if (headToHeadResult < 0) return 1   // Team B won head-to-head
+      // 2. Head-to-Head Result (if tied, but skip if circular tie)
+      // First, check if these teams are part of a larger tie group
+      const teamsWithSameWins = table.teams.filter(team => team.wins === a.wins)
+      let skipHeadToHead = false
+      
+      if (teamsWithSameWins.length >= 3) {
+        // Check for circular ties in this group
+        let hasCircularTie = false
+        for (let i = 0; i < teamsWithSameWins.length; i++) {
+          for (let j = i + 1; j < teamsWithSameWins.length; j++) {
+            for (let k = j + 1; k < teamsWithSameWins.length; k++) {
+              const teamA = teamsWithSameWins[i]
+              const teamB = teamsWithSameWins[j]
+              const teamC = teamsWithSameWins[k]
+              
+              const abResult = headToHeadMap.get(`${teamA.id}-${teamB.id}`)
+              const bcResult = headToHeadMap.get(`${teamB.id}-${teamC.id}`)
+              const caResult = headToHeadMap.get(`${teamC.id}-${teamA.id}`)
+              
+              // If all three head-to-head results exist and form a circle, it's a circular tie
+              if (abResult !== undefined && bcResult !== undefined && caResult !== undefined) {
+                // Check if A beats B, B beats C, and C beats A (circular)
+                if ((abResult > 0 && bcResult > 0 && caResult > 0) ||
+                    (abResult < 0 && bcResult < 0 && caResult < 0)) {
+                  hasCircularTie = true
+                  break
+                }
+              }
+            }
+            if (hasCircularTie) break
+          }
+          if (hasCircularTie) break
+        }
+        
+        if (hasCircularTie) {
+          skipHeadToHead = true
+        }
+      }
+      
+      // Only use head-to-head if not in a circular tie
+      if (!skipHeadToHead) {
+        const headToHeadKey = `${a.id}-${b.id}`
+        const headToHeadResult = headToHeadMap.get(headToHeadKey)
+        if (headToHeadResult !== undefined) {
+          if (headToHeadResult > 0) return -1  // Team A won head-to-head
+          if (headToHeadResult < 0) return 1   // Team B won head-to-head
+        }
       }
       
       // 3. Game Difference (individual games won - games lost)
