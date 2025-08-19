@@ -3,12 +3,32 @@ import { prisma } from '@/lib/prisma'
 
 export async function POST(request: Request) {
   try {
-    const { selectedTeamIds } = await request.json()
+    const { quarterFinalMatches } = await request.json()
 
     // Validate input
-    if (!selectedTeamIds || !Array.isArray(selectedTeamIds) || selectedTeamIds.length !== 8) {
+    if (!quarterFinalMatches || !Array.isArray(quarterFinalMatches) || quarterFinalMatches.length !== 4) {
       return NextResponse.json(
-        { error: 'Exactly 8 teams must be selected for quarter-finals' },
+        { error: 'Exactly 4 quarter-final matches must be provided' },
+        { status: 400 }
+      )
+    }
+
+    // Validate that all matches have both home and away teams
+    for (const match of quarterFinalMatches) {
+      if (!match.homeTeamId || !match.awayTeamId) {
+        return NextResponse.json(
+          { error: 'All quarter-final matches must have both home and away teams assigned' },
+          { status: 400 }
+        )
+      }
+    }
+
+    // Extract team IDs for validation
+    const selectedTeamIds = quarterFinalMatches.flatMap((match: any) => [match.homeTeamId, match.awayTeamId])
+
+    if (selectedTeamIds.length !== 8) {
+      return NextResponse.json(
+        { error: 'Exactly 8 teams must be assigned to quarter-finals' },
         { status: 400 }
       )
     }
@@ -57,8 +77,8 @@ export async function POST(request: Request) {
       )
     }
 
-    // Generate knockout bracket with selected teams
-    await generateKnockoutBracket(selectedTeams)
+    // Generate knockout bracket with specific match assignments
+    await generateKnockoutBracket(quarterFinalMatches)
 
     // Update tournament stage
     await prisma.tournamentStage.update({
@@ -71,33 +91,37 @@ export async function POST(request: Request) {
     })
 
     return NextResponse.json({ 
-      message: 'Knockout stage generated successfully with manual team selection',
-      selectedTeams: selectedTeams.map(team => ({ id: team.id, name: team.name }))
+      message: 'Knockout bracket generated successfully with manual team assignments'
     })
 
   } catch (error) {
-    console.error('Error generating manual knockout stage:', error)
+    console.error('Error generating manual knockout bracket:', error)
     return NextResponse.json(
-      { error: 'Failed to generate knockout stage' },
+      { error: 'Failed to generate knockout bracket' },
       { status: 500 }
     )
   }
 }
 
-async function generateKnockoutBracket(teams: any[]) {
+async function generateKnockoutBracket(quarterFinalMatches: any[]) {
   const quarterFinalDate = new Date()
   quarterFinalDate.setDate(quarterFinalDate.getDate() + 1) // Tomorrow
 
-  // Create quarter-final matches with selected teams
+  // Create quarter-final matches with specific assignments
   const quarterFinals = []
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < quarterFinalMatches.length; i++) {
+    const matchAssignment = quarterFinalMatches[i]
     const matchDate = new Date(quarterFinalDate)
     matchDate.setHours(14 + i, 0, 0, 0) // 2 PM, 3 PM, 4 PM, 5 PM
 
+    // Get team details for logging
+    const homeTeam = await prisma.team.findUnique({ where: { id: matchAssignment.homeTeamId } })
+    const awayTeam = await prisma.team.findUnique({ where: { id: matchAssignment.awayTeamId } })
+
     const match = await prisma.match.create({
       data: {
-        homeTeamId: teams[i * 2].id,
-        awayTeamId: teams[i * 2 + 1].id,
+        homeTeamId: matchAssignment.homeTeamId,
+        awayTeamId: matchAssignment.awayTeamId,
         scheduledAt: matchDate,
         status: 'SCHEDULED',
         format: 'BO5', // Knockout matches are BO5
@@ -107,7 +131,7 @@ async function generateKnockoutBracket(teams: any[]) {
       }
     })
     quarterFinals.push(match)
-    console.log(`Created Quarter-Final ${i + 1}: ${teams[i * 2].name} vs ${teams[i * 2 + 1].name}`)
+    console.log(`Created Quarter-Final ${i + 1}: ${homeTeam?.name} vs ${awayTeam?.name}`)
   }
 
   console.log('Generated quarter-final bracket with manual team assignment')

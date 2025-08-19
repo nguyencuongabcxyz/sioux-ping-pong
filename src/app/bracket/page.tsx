@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Trophy, Users, Calendar, Clock, ArrowRight } from 'lucide-react'
+import { Trophy, Users, Calendar } from 'lucide-react'
 
 interface Game {
   id: string
@@ -88,7 +88,42 @@ const BracketPage = () => {
     return { homeDisplay: '-', awayDisplay: '-', gameDetails: null }
   }
 
-  const MatchCard = ({ match, position = 'left' }: { match: Match, position?: 'left' | 'right' | 'center' }) => {
+  const MatchCard = ({ match, roundName, isPlaceholder = false }: { 
+    match?: Match, 
+    roundName?: string,
+    isPlaceholder?: boolean 
+  }) => {
+    if (isPlaceholder || !match) {
+      return (
+        <div className="bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 p-3 sm:p-4 w-full max-w-sm mx-auto">
+          <div className="text-center mb-3">
+            <h3 className="font-bold text-sm sm:text-lg text-gray-500">
+              {roundName || 'TBD'}
+            </h3>
+            <span className="inline-block px-2 py-1 rounded-full text-xs font-medium mt-1 bg-gray-100 text-gray-500">
+              PENDING
+            </span>
+          </div>
+          
+          <div className="space-y-2">
+            <div className="flex items-center justify-between p-2 sm:p-3 rounded-lg bg-gray-100">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gray-300"></div>
+                <span className="text-sm text-gray-400">To Be Determined</span>
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-between p-2 sm:p-3 rounded-lg bg-gray-100">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gray-300"></div>
+                <span className="text-sm text-gray-400">To Be Determined</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
     const result = getMatchResult(match)
     const isCompleted = match.status === 'COMPLETED'
     const homeWinner = isCompleted && match.homeGamesWon > match.awayGamesWon
@@ -277,7 +312,7 @@ const BracketPage = () => {
       </div>
 
       {/* Bracket */}
-      {bracketData.bracket ? (
+      {bracketData.bracket || bracketData.groupStageCompleted ? (
         <div className="bg-white rounded-lg shadow-lg p-4 sm:p-8 overflow-x-auto">
           {/* Mobile Layout */}
           <div className="lg:hidden space-y-6">
@@ -285,9 +320,18 @@ const BracketPage = () => {
             <div>
               <h2 className="text-xl font-bold text-center mb-4 text-gray-900">Quarter Finals</h2>
               <div className="space-y-4">
-                {bracketData.bracket.quarterFinals.map((match, index) => (
-                  <MatchCard key={match.id} match={match} />
-                ))}
+                {bracketData.bracket?.quarterFinals && bracketData.bracket?.quarterFinals.length > 0 ? (
+                  bracketData.bracket?.quarterFinals.map((match) => (
+                    <MatchCard key={match.id} match={match} />
+                  ))
+                ) : (
+                  <>
+                    <MatchCard isPlaceholder roundName="Quarter Final 1" />
+                    <MatchCard isPlaceholder roundName="Quarter Final 2" />
+                    <MatchCard isPlaceholder roundName="Quarter Final 3" />
+                    <MatchCard isPlaceholder roundName="Quarter Final 4" />
+                  </>
+                )}
               </div>
             </div>
 
@@ -295,19 +339,28 @@ const BracketPage = () => {
             <div>
               <h2 className="text-xl font-bold text-center mb-4 text-gray-900">Semi Finals</h2>
               <div className="space-y-4">
-                {bracketData.bracket.semiFinals.map((match, index) => (
-                  <MatchCard key={match.id} match={match} />
-                ))}
+                {bracketData.bracket?.semiFinals && bracketData.bracket?.semiFinals.length > 0 ? (
+                  bracketData.bracket?.semiFinals.map((match) => (
+                    <MatchCard key={match.id} match={match} />
+                  ))
+                ) : (
+                  <>
+                    <MatchCard isPlaceholder roundName="Semi Final 1" />
+                    <MatchCard isPlaceholder roundName="Semi Final 2" />
+                  </>
+                )}
               </div>
             </div>
 
             {/* Final */}
-            {bracketData.bracket.final && (
-              <div>
-                <h2 className="text-xl font-bold text-center mb-4 text-gray-900">Final</h2>
-                <MatchCard match={bracketData.bracket.final} position="center" />
-              </div>
-            )}
+            <div>
+              <h2 className="text-xl font-bold text-center mb-4 text-gray-900">Final</h2>
+              {bracketData.bracket?.final ? (
+                <MatchCard match={bracketData.bracket.final} />
+              ) : (
+                <MatchCard isPlaceholder roundName="Final" />
+              )}
+            </div>
           </div>
 
           {/* Desktop Layout */}
@@ -316,9 +369,18 @@ const BracketPage = () => {
             <div className="mb-12">
               <h2 className="text-2xl font-bold text-center mb-6 text-gray-900">Quarter Finals</h2>
               <div className="grid grid-cols-4 gap-8">
-                {bracketData.bracket.quarterFinals.map((match, index) => (
-                  <MatchCard key={match.id} match={match} />
-                ))}
+                {bracketData.bracket?.quarterFinals && bracketData.bracket?.quarterFinals.length > 0 ? (
+                  bracketData.bracket?.quarterFinals.map((match) => (
+                    <MatchCard key={match.id} match={match} />
+                  ))
+                ) : (
+                  <>
+                    <MatchCard isPlaceholder roundName="Quarter Final 1" />
+                    <MatchCard isPlaceholder roundName="Quarter Final 2" />
+                    <MatchCard isPlaceholder roundName="Quarter Final 3" />
+                    <MatchCard isPlaceholder roundName="Quarter Final 4" />
+                  </>
+                )}
               </div>
             </div>
 
@@ -326,21 +388,30 @@ const BracketPage = () => {
             <div className="mb-12">
               <h2 className="text-2xl font-bold text-center mb-6 text-gray-900">Semi Finals</h2>
               <div className="flex justify-center gap-24">
-                {bracketData.bracket.semiFinals.map((match, index) => (
-                  <MatchCard key={match.id} match={match} />
-                ))}
+                {bracketData.bracket?.semiFinals && bracketData.bracket?.semiFinals.length > 0 ? (
+                  bracketData.bracket?.semiFinals.map((match) => (
+                    <MatchCard key={match.id} match={match} />
+                  ))
+                ) : (
+                  <>
+                    <MatchCard isPlaceholder roundName="Semi Final 1" />
+                    <MatchCard isPlaceholder roundName="Semi Final 2" />
+                  </>
+                )}
               </div>
             </div>
 
             {/* Final */}
-            {bracketData.bracket.final && (
-              <div>
-                <h2 className="text-2xl font-bold text-center mb-6 text-gray-900">Final</h2>
-                <div className="flex justify-center">
-                  <MatchCard match={bracketData.bracket.final} position="center" />
-                </div>
+            <div className="mb-12">
+              <h2 className="text-2xl font-bold text-center mb-6 text-gray-900">Final</h2>
+              <div className="flex justify-center">
+                {bracketData.bracket?.final ? (
+                  <MatchCard match={bracketData.bracket.final} />
+                ) : (
+                  <MatchCard isPlaceholder roundName="Final" />
+                )}
               </div>
-            )}
+            </div>
           </div>
         </div>
       ) : (

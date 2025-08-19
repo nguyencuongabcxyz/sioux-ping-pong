@@ -130,13 +130,11 @@ const AdminDashboard = () => {
 
   const handleManualBracketGeneration = async (matches: any[]) => {
     try {
-      // Extract team IDs from the matches
-      const selectedTeamIds = matches.flatMap(match => [match.homeTeamId, match.awayTeamId]).filter(id => id)
-      
+      // Send the complete match assignments to preserve specific pairings
       const response = await fetch('/api/tournament/knockout/manual', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ selectedTeamIds })
+        body: JSON.stringify({ quarterFinalMatches: matches })
       })
       
       if (response.ok) {
