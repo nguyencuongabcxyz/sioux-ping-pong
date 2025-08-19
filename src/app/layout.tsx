@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Sioux Ping Pong Tournament 2025",
-  description: "Company ping pong tournament standings and schedules",
+  description: "Company ping pong tournament bracket and knockout stage progression",
   icons: {
     icon: "/paddle.svg",
   },

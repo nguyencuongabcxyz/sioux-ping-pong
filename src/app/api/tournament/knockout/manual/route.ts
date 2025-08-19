@@ -78,9 +78,11 @@ export async function POST(request: Request) {
     }
 
     // Generate knockout bracket with specific match assignments
+    console.log('Starting knockout bracket generation with matches:', quarterFinalMatches)
     await generateKnockoutBracket(quarterFinalMatches)
 
     // Update tournament stage
+    console.log('Updating tournament stage to set knockoutGenerated = true')
     await prisma.tournamentStage.update({
       where: { id: tournamentStage.id },
       data: {
@@ -90,8 +92,17 @@ export async function POST(request: Request) {
       }
     })
 
+    // Verify the matches were created
+    const createdMatches = await prisma.match.count({
+      where: { matchType: 'KNOCKOUT', round: 'QUARTER_FINAL' }
+    })
+    
+    console.log(`Knockout generation complete. Created ${createdMatches} quarter-final matches.`)
+
     return NextResponse.json({ 
-      message: 'Knockout bracket generated successfully with manual team assignments'
+      message: 'Knockout bracket generated successfully with manual team assignments',
+      quarterFinalMatches: createdMatches,
+      success: true
     })
 
   } catch (error) {

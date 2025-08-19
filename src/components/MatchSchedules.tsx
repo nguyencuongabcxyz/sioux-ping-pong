@@ -530,39 +530,7 @@ const MatchSchedules = () => {
           
           return (
             <div className="space-y-6 sm:space-y-8">
-              {/* Group Stage Matches */}
-              {Object.keys(groupedByType.GROUP_STAGE).length > 0 && (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3 pb-3 border-b-2 border-blue-200">
-                    <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
-                    <h2 className="text-xl sm:text-2xl font-bold text-blue-900">Group Stage</h2>
-                    <div className="text-xs sm:text-sm text-blue-600 bg-blue-100 px-2 sm:px-3 py-1 rounded-full">
-                      Round Robin
-                    </div>
-                  </div>
-                  
-                  {Object.entries(groupedByType.GROUP_STAGE)
-                    .sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())
-                    .map(([date, matches]) => (
-                      <div key={`group-${date}`} className="bg-white rounded-lg shadow-sm border border-blue-200 overflow-hidden">
-                        <div className="bg-blue-50 px-4 sm:px-6 py-3 border-b border-blue-200">
-                          <h3 className="text-base sm:text-lg font-semibold text-blue-900 flex items-center gap-2">
-                            <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
-                            {formatDate(date)}
-                          </h3>
-                        </div>
-                        
-                        <div className="divide-y divide-blue-100">
-                          {matches
-                            .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime())
-                            .map((match) => (
-                              <MatchCard key={match.id} match={match} />
-                            ))}
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              )}
+
 
               {/* Knockout Stage Matches */}
               {Object.keys(groupedByType.KNOCKOUT).length > 0 && (

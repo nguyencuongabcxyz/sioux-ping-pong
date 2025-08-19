@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { Trophy, Calendar, Menu, X, Target, BookOpen, Gift, DollarSign, BarChart3 } from 'lucide-react'
+import { Trophy, Calendar, Menu, X, BookOpen, Gift, DollarSign, BarChart3 } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 
 const Navigation = () => {
@@ -13,7 +13,7 @@ const Navigation = () => {
 
   const navItems = [
     {
-      name: 'Standings',
+      name: 'Bracket',
       href: '/',
       icon: Trophy,
     },
@@ -21,11 +21,6 @@ const Navigation = () => {
       name: 'Schedules',
       href: '/schedules',
       icon: Calendar,
-    },
-    {
-      name: 'Bracket',
-      href: '/bracket',
-      icon: Target,
     },
     {
       name: 'Rules',
