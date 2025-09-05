@@ -66,6 +66,12 @@ model Team {
   homeMatches      Match[] @relation("HomeTeam")
   awayMatches      Match[] @relation("AwayTeam")
   
+  // Prediction game relation
+  predictableTeam  PredictableTeam?
+  
+  // Match prediction relations
+  matchPredictions MatchPrediction[] @relation("MatchPredictionWinner")
+  
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -97,6 +103,9 @@ model Match {
   homeGamesWon      Int             @default(0)
   awayGamesWon      Int             @default(0)
   
+  // Prediction settings
+  predictionsOpen   Boolean         @default(false) // Admin can open/close predictions for this match
+  
   // Legacy fields for backward compatibility
   homeScore         Int?
   awayScore         Int?
@@ -109,6 +118,9 @@ model Match {
   winnerAdvancesToMatch Match?       @relation("AdvancingMatch", fields: [winnerAdvancesToMatchId], references: [id])
   winnerAdvancesToMatchId String?
   advancingFromMatches  Match[]      @relation("AdvancingMatch")
+  
+  // Match predictions
+  predictions       MatchPrediction[]
   
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
@@ -168,4 +180,52 @@ enum GameStatus {
   SCHEDULED
   IN_PROGRESS
   COMPLETED
+}
+
+// Final match prediction game models
+model PredictableTeam {
+  id         String   @id @default(cuid())
+  teamId     String   @unique
+  team       Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  isActive   Boolean  @default(true) // Admin can enable/disable teams for prediction
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  // Predictions made for this team as champion
+  predictions FinalMatchPrediction[] @relation("PredictedChampion")
+
+  @@map("predictable_teams")
+}
+
+model FinalMatchPrediction {
+  id              String         @id @default(cuid())
+  playerName      String
+  companyEmail    String
+  championTeamId  String
+  championTeam    PredictableTeam @relation("PredictedChampion", fields: [championTeamId], references: [id], onDelete: Cascade)
+  matchResult     String         // e.g., "3-1", "3-0", "3-2"
+  losingTeamScore Int            // Final game score of the losing team (0-11 points)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@unique([companyEmail])
+  @@map("final_match_predictions")
+}
+
+// Scheduled match prediction game models
+model MatchPrediction {
+  id              String   @id @default(cuid())
+  playerName      String
+  companyEmail    String
+  matchId         String
+  match           Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  winningTeamId   String
+  winningTeam     Team     @relation("MatchPredictionWinner", fields: [winningTeamId], references: [id], onDelete: Cascade)
+  matchResult     String   // e.g., "3-1", "3-0", "3-2"
+  losingTeamScore Int      // Final game score of the losing team (0-11 points)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([companyEmail, matchId]) // One prediction per email per match
+  @@map("match_predictions")
 }

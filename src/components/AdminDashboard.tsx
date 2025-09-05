@@ -19,6 +19,8 @@ import {
   RefreshCw
 } from 'lucide-react'
 import QuarterFinalSelection from './QuarterFinalSelection'
+import PredictableTeamsManager from './PredictableTeamsManager'
+import MatchPredictionManager from './MatchPredictionManager'
 
 interface Game {
   id: string
@@ -68,6 +70,8 @@ const AdminDashboard = () => {
   const [tieBreakData, setTieBreakData] = useState<any>(null)
   const [selectedTieBreakTeams, setSelectedTieBreakTeams] = useState<string[]>([])
   const [showQuarterFinalSelection, setShowQuarterFinalSelection] = useState(false)
+  const [showPredictableTeamsManager, setShowPredictableTeamsManager] = useState(false)
+  const [showMatchPredictionManager, setShowMatchPredictionManager] = useState(false)
   const [tableFilter, setTableFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null)
@@ -962,6 +966,20 @@ const AdminDashboard = () => {
                 <RotateCcw className="w-4 h-4" />
                 Force Fix Times
               </button>
+              <button
+                onClick={() => setShowPredictableTeamsManager(true)}
+                className="bg-orange-600 text-white px-6 py-3 rounded-lg hover:bg-orange-700 transition-colors flex items-center gap-2"
+              >
+                <Target className="w-4 h-4" />
+                Manage Final Predictions
+              </button>
+              <button
+                onClick={() => setShowMatchPredictionManager(true)}
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+              >
+                <Calendar className="w-4 h-4" />
+                Manage Match Predictions
+              </button>
             </div>
 
             {/* Tournament Advancement Buttons */}
@@ -1781,6 +1799,32 @@ const AdminDashboard = () => {
                 >
                   Cancel
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Predictable Teams Manager Modal */}
+        {showPredictableTeamsManager && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <PredictableTeamsManager
+                  onClose={() => setShowPredictableTeamsManager(false)}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Match Prediction Manager Modal */}
+        {showMatchPredictionManager && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <MatchPredictionManager
+                  onClose={() => setShowMatchPredictionManager(false)}
+                />
               </div>
             </div>
           </div>
