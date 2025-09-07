@@ -599,6 +599,10 @@ const MatchPredictionForm = ({ onPredictionSubmitted }: MatchPredictionFormProps
                                 <Target className="w-4 h-4 inline mr-1" />
                                 Losing Team&apos;s Final Game Score *
                               </label>
+                              <p className="text-xs text-gray-500 mb-3">
+                                Enter the points the losing team scores in the final game of the match (0-11).<br/>
+                                In table tennis, games are played to 11 points. The losing team might score 8, 9, or 10 points in the final game.
+                              </p>
                               <div className="max-w-xs">
                                 <input
                                   type="number"
@@ -616,15 +620,6 @@ const MatchPredictionForm = ({ onPredictionSubmitted }: MatchPredictionFormProps
                               </div>
                             </div>
 
-                            {/* Debug Info - Remove this later */}
-                            <div className="bg-gray-100 border border-gray-300 rounded-lg p-3 text-xs">
-                              <div className="font-semibold mb-2">Debug Info:</div>
-                              <div>Selected Match ID: {formData.matchId}</div>
-                              <div>Winning Team ID: {formData.winningTeamId || 'None'}</div>
-                              <div>Home Team ID: {match.homeTeam?.id}</div>
-                              <div>Away Team ID: {match.awayTeam?.id}</div>
-                              <div>Form Valid: {isFormValid() ? 'Yes' : 'No'}</div>
-                            </div>
 
                             {/* Prediction Summary */}
                             {formData.winningTeamId && (

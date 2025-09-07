@@ -1,10 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { ArrowLeft, Calendar, Users } from 'lucide-react'
+import { ArrowLeft, Calendar } from 'lucide-react'
 import Link from 'next/link'
 import MatchPredictionForm from '@/components/MatchPredictionForm'
-import MatchPredictionsDisplay from '@/components/MatchPredictionsDisplay'
 
 export default function ScheduledMatchPredictionsPage() {
   const [refreshTrigger, setRefreshTrigger] = useState(0)
@@ -38,9 +37,44 @@ export default function ScheduledMatchPredictionsPage() {
         </p>
       </div>
 
-      {/* Main Content - Full Width */}
-      <div className="max-w-6xl mx-auto">
-        <MatchPredictionForm onPredictionSubmitted={handlePredictionSubmitted} />
+      {/* Main Content - Side by Side Layout */}
+      <div className="max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* Left Column - Match Prediction Form */}
+          <div className="lg:col-span-2">
+            <MatchPredictionForm onPredictionSubmitted={handlePredictionSubmitted} />
+          </div>
+          
+          {/* Right Column - Payment Instructions */}
+          <div className="lg:col-span-1">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 sticky top-4">
+              <div className="text-center mb-4">
+                <h3 className="text-lg font-semibold text-blue-900 mb-3">💰 Payment Required</h3>
+                <p className="text-sm text-blue-800 mb-4">
+                  Send <strong>20,000 VND</strong> to participate in scheduled match predictions.
+                </p>
+              </div>
+              
+              <div className="bg-white rounded-lg p-4 mb-4">
+                <img 
+                  src="/payment_qr_code.jpg" 
+                  alt="Payment QR Code" 
+                  className="w-full h-auto rounded-lg border border-gray-200"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement
+                    target.src = '/api/placeholder/200/200'
+                  }}
+                />
+              </div>
+              
+              <p className="text-xs text-blue-700 text-center">
+                After payment, you can make predictions for scheduled matches. The winner takes all fees collected from participants.
+              </p>
+            </div>
+          </div>
+          
+        </div>
       </div>
     </div>
   )
