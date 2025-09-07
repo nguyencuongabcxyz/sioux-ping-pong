@@ -22,12 +22,15 @@ interface MatchPrediction {
   losingTeamScore: number
   createdAt: string
   match: {
+    id: string
     homeTeam: {
+      id: string
       name: string
       member1Image?: string
       member2Image?: string
     }
     awayTeam: {
+      id: string
       name: string
       member1Image?: string
       member2Image?: string
@@ -35,6 +38,7 @@ interface MatchPrediction {
     scheduledAt: string
   }
   winningTeam: {
+    id: string
     name: string
     member1Image?: string
     member2Image?: string
