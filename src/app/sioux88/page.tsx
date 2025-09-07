@@ -1,6 +1,4 @@
 'use client'
-
-import { useState } from 'react'
 import { DollarSign, Star, Trophy, ArrowRight, Plus, Calendar } from 'lucide-react'
 import Link from 'next/link'
 
@@ -57,7 +55,7 @@ export default function Sioux88Page() {
               
               <p className="text-gray-700 text-sm mb-4">
                 Predict who will win the championship and the exact final match score. 
-                Enter the losing team's final game points for extra precision!
+                Enter the losing team&apos;s final game points for extra precision!
               </p>
               
               <div className="flex items-center justify-between">
@@ -91,7 +89,7 @@ export default function Sioux88Page() {
               
               <p className="text-gray-700 text-sm mb-4">
                 Predict the outcomes of scheduled matches! Choose winning teams, 
-                final scores, and losing team's final game points.
+                final scores, and losing team&apos;s final game points.
               </p>
               
               <div className="flex items-center justify-between">
