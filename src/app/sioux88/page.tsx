@@ -62,7 +62,7 @@ export default function Sioux88Page() {
               
               <div className="flex items-center justify-between">
                 <div className="text-xs text-gray-500">
-                  🎯 Active • Public Predictions
+                  🎁 Free to Play • Gift Award
                 </div>
                 <div className="text-orange-600 group-hover:text-orange-700 transition-colors">
                   <ArrowRight className="w-4 h-4" />
@@ -96,7 +96,7 @@ export default function Sioux88Page() {
               
               <div className="flex items-center justify-between">
                 <div className="text-xs text-gray-500">
-                  🎯 Active • Per Match • Public
+                  💰 20k VND Fee • Pool Award
                 </div>
                 <div className="text-blue-600 group-hover:text-blue-700 transition-colors">
                   <ArrowRight className="w-4 h-4" />

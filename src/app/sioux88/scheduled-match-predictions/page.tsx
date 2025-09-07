@@ -33,8 +33,8 @@ export default function ScheduledMatchPredictionsPage() {
           <h1 className="text-3xl font-bold text-gray-900">Scheduled Match Predictions</h1>
         </div>
         <p className="text-gray-600 max-w-2xl mx-auto">
-          Predict the outcomes of scheduled matches! Select from matches that are open for predictions, 
-          choose your winning team, and predict the final score and losing team's final game points.
+          Predict the outcomes of scheduled matches! This game has a <strong>20k VND fee</strong> to play and the award is the total fee collected from all other players. 
+          Select from matches that are open for predictions, choose your winning team, and predict the final score and losing team's final game points.
         </p>
       </div>
 

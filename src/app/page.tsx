@@ -24,7 +24,7 @@ interface Match {
   scheduledAt: string
   status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'
   format: 'BO3' | 'BO5'
-  round: 'QUARTER_FINAL' | 'SEMI_FINAL' | 'FINAL'
+  round: 'QUARTER_FINAL' | 'SEMI_FINAL' | 'FINAL' | 'THIRD_PLACE'
   roundOrder: number
   homeGamesWon: number
   awayGamesWon: number
@@ -41,6 +41,7 @@ interface BracketData {
     quarterFinals: Match[]
     semiFinals: Match[]
     final: Match | null
+    thirdPlace: Match | null
   }
 }
 
@@ -152,7 +153,9 @@ export default function Home() {
       }`}>
         <div className="text-center mb-3">
           <h3 className="font-bold text-sm sm:text-lg text-gray-900">
-            {match.round.replace('_', ' ')} {match.roundOrder}
+            {match.round === 'THIRD_PLACE' ? 'Third Place' : 
+             match.round === 'FINAL' ? 'Final' : 
+             `${match.round.replace('_', ' ')} ${match.roundOrder}`}
           </h3>
           <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-gray-600">
             <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -423,6 +426,16 @@ export default function Home() {
               </div>
             </div>
 
+            {/* Third Place */}
+            <div>
+              <h2 className="text-xl font-bold text-center mb-4 text-gray-900">Third Place</h2>
+              {bracketData.bracket?.thirdPlace ? (
+                <MatchCard match={bracketData.bracket.thirdPlace} />
+              ) : (
+                <MatchCard isPlaceholder roundName="Third Place" />
+              )}
+            </div>
+
             {/* Final */}
             <div>
               <h2 className="text-xl font-bold text-center mb-4 text-gray-900">Final</h2>
@@ -468,6 +481,18 @@ export default function Home() {
                     <MatchCard isPlaceholder roundName="Semi Final 1" />
                     <MatchCard isPlaceholder roundName="Semi Final 2" />
                   </>
+                )}
+              </div>
+            </div>
+
+            {/* Third Place */}
+            <div className="mb-12">
+              <h2 className="text-2xl font-bold text-center mb-6 text-gray-900">Third Place</h2>
+              <div className="flex justify-center">
+                {bracketData.bracket?.thirdPlace ? (
+                  <MatchCard match={bracketData.bracket.thirdPlace} />
+                ) : (
+                  <MatchCard isPlaceholder roundName="Third Place" />
                 )}
               </div>
             </div>

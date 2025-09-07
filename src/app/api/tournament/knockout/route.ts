@@ -462,7 +462,8 @@ async function getKnockoutBracket() {
   const bracket = {
     quarterFinals: knockoutMatches.filter(m => m.round === 'QUARTER_FINAL'),
     semiFinals: knockoutMatches.filter(m => m.round === 'SEMI_FINAL'),
-    final: knockoutMatches.find(m => m.round === 'FINAL')
+    final: knockoutMatches.find(m => m.round === 'FINAL'),
+    thirdPlace: knockoutMatches.find(m => m.round === 'THIRD_PLACE')
   }
 
   return bracket

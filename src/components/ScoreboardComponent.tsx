@@ -30,7 +30,7 @@ interface Match {
   status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'
   format: 'BO3' | 'BO5'
   matchType: 'GROUP_STAGE' | 'KNOCKOUT'
-  round?: 'QUARTER_FINAL' | 'SEMI_FINAL' | 'FINAL'
+  round?: 'QUARTER_FINAL' | 'SEMI_FINAL' | 'FINAL' | 'THIRD_PLACE'
   homeGamesWon: number
   awayGamesWon: number
   homeScore?: number

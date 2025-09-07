@@ -16,10 +16,12 @@ import {
   Eye
 } from 'lucide-react'
 import MatchPredictionsDisplay from './MatchPredictionsDisplay'
+import CompletedMatchResults from './CompletedMatchResults'
 
 interface Match {
   id: string
   scheduledAt: string
+  status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'
   homeTeam: {
     id: string
     name: string
@@ -780,6 +782,17 @@ const MatchPredictionForm = ({ onPredictionSubmitted }: MatchPredictionFormProps
                           <span>{time}</span>
                         </div>
                         <div className="flex items-center gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleViewPredictions(match.id || '')
+                            }}
+                            className="flex items-center gap-2 px-2 py-1.5 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors text-sm"
+                            title="View others predictions for this match"
+                          >
+                            <Eye className="w-4 h-4" />
+                            <span className="whitespace-nowrap">View others predictions</span>
+                          </button>
                           <button
                             onClick={(e) => {
                               e.stopPropagation()

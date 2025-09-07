@@ -42,7 +42,7 @@ interface Match {
   status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'
   format: 'BO3' | 'BO5'
   matchType: 'GROUP_STAGE' | 'KNOCKOUT'
-  round?: 'QUARTER_FINAL' | 'SEMI_FINAL' | 'FINAL'
+  round?: 'QUARTER_FINAL' | 'SEMI_FINAL' | 'FINAL' | 'THIRD_PLACE'
   homeGamesWon: number
   awayGamesWon: number
   homeScore?: number // Legacy field
@@ -205,7 +205,7 @@ const AdminDashboard = () => {
         await fetchMatches() // Refresh to show new final match
         setNotification({
           type: 'success',
-          message: 'Final match generated successfully!'
+          message: 'Final and third-place matches generated successfully!'
         })
       } else {
         const errorData = await response.json()
@@ -488,6 +488,81 @@ const AdminDashboard = () => {
     })
   }
 
+  const handleCloseAllFinalPredictions = async () => {
+    try {
+      const response = await fetch('/api/final-predictions/predictable-teams', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'set_predictable_teams',
+          teamIds: [] // Empty array means no teams are predictable
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to close final predictions')
+      }
+
+      setNotification({
+        type: 'success',
+        message: 'All final match predictions have been closed successfully!'
+      })
+
+      setTimeout(() => setNotification(null), 5000)
+    } catch (error) {
+      setNotification({
+        type: 'error',
+        message: `Failed to close final predictions: ${error instanceof Error ? error.message : 'Unknown error'}`
+      })
+      setTimeout(() => setNotification(null), 5000)
+    }
+  }
+
+  const handleOpenAllFinalPredictions = async () => {
+    try {
+      // First, we need to get all teams to make them all predictable
+      const teamsResponse = await fetch('/api/final-predictions/all-teams')
+      if (!teamsResponse.ok) {
+        throw new Error('Failed to fetch teams')
+      }
+      
+      const teamsData = await teamsResponse.json()
+      const allTeamIds = teamsData.teams.map((team: any) => team.id)
+
+      const response = await fetch('/api/final-predictions/predictable-teams', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'set_predictable_teams',
+          teamIds: allTeamIds // All teams are now predictable
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to open final predictions')
+      }
+
+      setNotification({
+        type: 'success',
+        message: 'All final match predictions have been opened successfully!'
+      })
+
+      setTimeout(() => setNotification(null), 5000)
+    } catch (error) {
+      setNotification({
+        type: 'error',
+        message: `Failed to open final predictions: ${error instanceof Error ? error.message : 'Unknown error'}`
+      })
+      setTimeout(() => setNotification(null), 5000)
+    }
+  }
+
   const updateGameScore = (gameNumber: number, field: 'homeScore' | 'awayScore', value: string) => {
     setEditForm(prev => ({
       ...prev,
@@ -695,11 +770,12 @@ const AdminDashboard = () => {
       const roundLabels = {
         'QUARTER_FINAL': 'Quarter-Final',
         'SEMI_FINAL': 'Semi-Final',
-        'FINAL': 'Final'
+        'FINAL': 'Final',
+        'THIRD_PLACE': 'Third Place'
       }
       return {
         label: round ? roundLabels[round as keyof typeof roundLabels] : 'Knockout',
-        icon: round === 'FINAL' ? Crown : Target,
+        icon: round === 'FINAL' ? Crown : round === 'THIRD_PLACE' ? Trophy : Target,
         color: 'text-purple-600',
         bgColor: 'bg-purple-50',
         borderColor: 'border-purple-200'
@@ -972,6 +1048,20 @@ const AdminDashboard = () => {
               >
                 <Target className="w-4 h-4" />
                 Manage Final Predictions
+              </button>
+              <button
+                onClick={handleCloseAllFinalPredictions}
+                className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
+              >
+                <X className="w-4 h-4" />
+                Close All Final Predictions
+              </button>
+              <button
+                onClick={handleOpenAllFinalPredictions}
+                className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+              >
+                <CheckCircle className="w-4 h-4" />
+                Open All Final Predictions
               </button>
               <button
                 onClick={() => setShowMatchPredictionManager(true)}

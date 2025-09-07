@@ -8,6 +8,60 @@ function parseScheduledAt(scheduledAt: string): Date {
   return new Date(scheduledAt)
 }
 
+// GET - Fetch a specific match by ID
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params
+  try {
+    const match = await prisma.match.findUnique({
+      where: { id },
+      include: {
+        homeTeam: {
+          select: {
+            id: true,
+            name: true,
+            member1Image: true,
+            member2Image: true
+          }
+        },
+        awayTeam: {
+          select: {
+            id: true,
+            name: true,
+            member1Image: true,
+            member2Image: true
+          }
+        },
+        tournamentTable: {
+          select: {
+            name: true
+          }
+        },
+        games: {
+          orderBy: { gameNumber: 'asc' }
+        }
+      }
+    })
+
+    if (!match) {
+      return NextResponse.json(
+        { error: 'Match not found' },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json({ match })
+  } catch (error) {
+    console.error('Error fetching match:', error)
+    return NextResponse.json(
+      { error: 'Failed to fetch match' },
+      { status: 500 }
+    )
+  }
+}
+
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }

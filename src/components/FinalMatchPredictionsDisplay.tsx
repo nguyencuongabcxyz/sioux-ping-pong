@@ -341,7 +341,7 @@ const FinalMatchPredictionsDisplay = ({ refreshTrigger }: FinalMatchPredictionsD
                         </div>
                         <div 
                           className="text-xs text-gray-500 truncate max-w-[80px] cursor-help" 
-                          title={formatEmail(prediction.companyEmail)}
+                          title={prediction.companyEmail}
                         >
                           {formatEmail(prediction.companyEmail)}
                         </div>

@@ -34,6 +34,7 @@ export default function FinalMatchPredictionPage() {
         </div>
         <p className="text-gray-600 max-w-2xl mx-auto">
           Predict who will win the championship and the exact final match score! 
+          This game is <strong>free to play</strong> and the award is a gift from the organization team. 
           Enter your name and company email to make your prediction. All predictions are public.
         </p>
       </div>

@@ -264,6 +264,18 @@ const PredictableTeamsManager = ({ onClose }: PredictableTeamsManagerProps) => {
             >
               Clear All
             </button>
+            <button
+              onClick={() => setSelectedTeamIds([])}
+              className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+            >
+              Close All Predictions
+            </button>
+            <button
+              onClick={() => setSelectedTeamIds(allTeams.map(team => team.id))}
+              className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+            >
+              Open All Predictions
+            </button>
           </div>
         </div>
 

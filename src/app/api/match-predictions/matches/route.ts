@@ -6,10 +6,19 @@ export async function GET() {
   try {
     const matches = await prisma.match.findMany({
       where: {
-        status: 'SCHEDULED', // Only show scheduled matches
-        // Removed the date filter to show all scheduled matches
+        OR: [
+          { status: 'SCHEDULED' }, // Show scheduled matches
+          { 
+            status: 'COMPLETED',
+            predictionsOpen: true // Show completed matches that were open for prediction
+          }
+        ]
       },
-      include: {
+      select: {
+        id: true,
+        scheduledAt: true,
+        status: true,
+        predictionsOpen: true,
         homeTeam: {
           select: {
             id: true,

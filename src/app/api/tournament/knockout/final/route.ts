@@ -39,12 +39,20 @@ export async function POST(request: Request) {
       )
     }
 
-    // Determine winners of semi-finals
+    // Determine winners and losers of semi-finals
     const semiFinalWinners = semiFinals.map(match => {
       if (match.homeGamesWon > match.awayGamesWon) {
         return match.homeTeam
       } else {
         return match.awayTeam
+      }
+    })
+
+    const semiFinalLosers = semiFinals.map(match => {
+      if (match.homeGamesWon > match.awayGamesWon) {
+        return match.awayTeam
+      } else {
+        return match.homeTeam
       }
     })
 
@@ -66,6 +74,24 @@ export async function POST(request: Request) {
       }
     })
 
+    // Create third-place match
+    const thirdPlaceDate = new Date()
+    thirdPlaceDate.setDate(thirdPlaceDate.getDate() + 1) // Tomorrow
+    thirdPlaceDate.setHours(14, 0, 0, 0) // 2 PM (before the final)
+
+    const thirdPlace = await prisma.match.create({
+      data: {
+        homeTeamId: semiFinalLosers[0].id,
+        awayTeamId: semiFinalLosers[1].id,
+        scheduledAt: thirdPlaceDate,
+        status: 'SCHEDULED',
+        format: 'BO5',
+        matchType: 'KNOCKOUT',
+        round: 'THIRD_PLACE',
+        roundOrder: 2,
+      }
+    })
+
     // Link semi-finals to advance to final
     await prisma.match.updateMany({
       where: { id: { in: [semiFinals[0].id, semiFinals[1].id] } },
@@ -73,10 +99,12 @@ export async function POST(request: Request) {
     })
 
     console.log('Generated final match:', `${semiFinalWinners[0].name} vs ${semiFinalWinners[1].name}`)
+    console.log('Generated third-place match:', `${semiFinalLosers[0].name} vs ${semiFinalLosers[1].name}`)
 
     return NextResponse.json({ 
-      message: 'Final match generated successfully',
-      final: { id: final.id, homeTeamId: final.homeTeamId, awayTeamId: final.awayTeamId }
+      message: 'Final and third-place matches generated successfully',
+      final: { id: final.id, homeTeamId: final.homeTeamId, awayTeamId: final.awayTeamId },
+      thirdPlace: { id: thirdPlace.id, homeTeamId: thirdPlace.homeTeamId, awayTeamId: thirdPlace.awayTeamId }
     })
 
   } catch (error) {

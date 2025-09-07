@@ -168,6 +168,7 @@ enum KnockoutRound {
   QUARTER_FINAL
   SEMI_FINAL
   FINAL
+  THIRD_PLACE
 }
 
 enum TournamentPhase {

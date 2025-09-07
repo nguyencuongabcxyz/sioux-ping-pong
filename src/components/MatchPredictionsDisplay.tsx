@@ -413,7 +413,7 @@ const MatchPredictionsDisplay = ({ refreshTrigger, selectedMatchId: propSelected
                         <div className="font-medium text-gray-900 truncate max-w-[120px]" title={prediction.playerName}>
                           {prediction.playerName}
                         </div>
-                        <div className="text-xs text-gray-500 truncate max-w-[120px]" title={formatEmail(prediction.companyEmail)}>
+                        <div className="text-xs text-gray-500 truncate max-w-[120px]" title={prediction.companyEmail}>
                           {formatEmail(prediction.companyEmail)}
                         </div>
                       </div>

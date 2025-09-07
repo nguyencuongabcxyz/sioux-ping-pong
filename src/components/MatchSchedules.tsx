@@ -32,7 +32,7 @@ interface Match {
   status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'
   format: 'BO3' | 'BO5'
   matchType: 'GROUP_STAGE' | 'KNOCKOUT'
-  round?: 'QUARTER_FINAL' | 'SEMI_FINAL' | 'FINAL'
+  round?: 'QUARTER_FINAL' | 'SEMI_FINAL' | 'FINAL' | 'THIRD_PLACE'
   homeGamesWon: number
   awayGamesWon: number
   homeScore?: number // Legacy/total points
@@ -201,11 +201,12 @@ const MatchSchedules = () => {
       const roundLabels = {
         'QUARTER_FINAL': 'Quarter-Final',
         'SEMI_FINAL': 'Semi-Final',
-        'FINAL': 'Final'
+        'FINAL': 'Final',
+        'THIRD_PLACE': 'Third Place'
       }
       return {
         label: round ? roundLabels[round as keyof typeof roundLabels] : 'Knockout',
-        icon: round === 'FINAL' ? Crown : Target,
+        icon: round === 'FINAL' ? Crown : round === 'THIRD_PLACE' ? Trophy : Target,
         color: 'text-purple-600',
         bgColor: 'bg-purple-50',
         borderColor: 'border-purple-200'
