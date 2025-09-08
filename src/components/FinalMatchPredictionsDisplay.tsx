@@ -310,9 +310,9 @@ const FinalMatchPredictionsDisplay = ({ refreshTrigger }: FinalMatchPredictionsD
               <h3 className="text-base font-semibold text-orange-900">All Predictions</h3>
             </div>
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto max-h-96 overflow-y-auto">
             <table className="min-w-full divide-y divide-orange-100">
-              <thead className="bg-orange-50">
+              <thead className="bg-orange-50 sticky top-0 z-10">
                 <tr>
                   <th className="px-3 py-2 text-left text-xs font-medium text-orange-700 uppercase tracking-wider">
                     Player
@@ -329,7 +329,7 @@ const FinalMatchPredictionsDisplay = ({ refreshTrigger }: FinalMatchPredictionsD
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-orange-100">
-                {predictions.slice(0, 10).map((prediction) => (
+                {predictions.map((prediction) => (
                   <tr key={prediction.id} className="hover:bg-orange-50">
                     <td className="px-3 py-2 whitespace-nowrap">
                       <div className="text-sm">
@@ -396,11 +396,6 @@ const FinalMatchPredictionsDisplay = ({ refreshTrigger }: FinalMatchPredictionsD
                 ))}
               </tbody>
             </table>
-            {predictions.length > 10 && (
-              <div className="p-3 text-center text-xs text-gray-500 border-t border-orange-100">
-                Showing first 10 of {predictions.length} predictions
-              </div>
-            )}
           </div>
         </div>
       )}
