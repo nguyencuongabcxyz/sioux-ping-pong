@@ -310,7 +310,7 @@ const FinalMatchPredictionsDisplay = ({ refreshTrigger }: FinalMatchPredictionsD
               <h3 className="text-base font-semibold text-orange-900">All Predictions</h3>
             </div>
           </div>
-          <div className="overflow-x-auto max-h-96 overflow-y-auto">
+          <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
             <table className="min-w-full divide-y divide-orange-100">
               <thead className="bg-orange-50 sticky top-0 z-10">
                 <tr>
